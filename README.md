@@ -22,7 +22,7 @@ Boot it up and click `Query Followers` to get a Twitter login page. This is done
 
 For my Twitter follower list, at around 11k people, it takes about an hour. Sorry!
 
-***NOTE:*** I opted for **Firefox** as the base in this project, simply because Chrome has been going down a "Do More Harm" path with their recent updates and plans, and **Puppeteer** now has much better cross browser support for Firefox now with their [WebDriver-BiDi](https://pptr.dev/webdriver-bidi) updates! Some real cool stuff there.
+***NOTE:*** I opted for **Firefox** as the base in this project, simply because Chrome has been going down a "Do More Harm" path with their recent updates and plans, and **Puppeteer** now has much better cross browser support for Firefox with their [WebDriver-BiDi](https://pptr.dev/webdriver-bidi) updates! Some real cool stuff there.
 
 That being said, you can change browsers using the `browser.json` file in the root directory. Valid options are `firefox` or `chrome`. ***It will not download a browser for you*** however, so make sure you have one of them installed!
 
