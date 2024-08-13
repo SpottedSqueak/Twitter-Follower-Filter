@@ -9,7 +9,6 @@
     "lint": "eslint *.js",
     "lint:fix": "eslint js --fix",
     "lint:init": "eslint --init",
-    "preinstall": "nvm use",
     "build": "npm ci && npx package"
   },
   "author": "SpottedSqueak",
