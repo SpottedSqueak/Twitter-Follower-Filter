@@ -1,0 +1,32 @@
+{
+  "name": "twitter-follower-filter",
+  "version": "0.0.1",
+  "description": "Filter and search your Twitter followers based on criteria you provide.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint *.js",
+    "lint:fix": "eslint js --fix",
+    "lint:init": "eslint --init",
+    "preinstall": "nvm use",
+    "build": "npm ci && npx package"
+  },
+  "author": "SpottedSqueak",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@radically-straightforward/package": "^2.0.1",
+    "eslint": "^9.8.0",
+    "globals": "^15.8.0"
+  },
+  "dependencies": {
+    "browser-paths": "^1.1.5",
+    "csv-stringify": "^6.5.1",
+    "fs-extra": "^11.2.0",
+    "open": "^10.1.0",
+    "puppeteer-core": "^22.14.0",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
+  }
+}

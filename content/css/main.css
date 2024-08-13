@@ -1,0 +1,93 @@
+:root {
+  --bg-color: #181818;
+  --component-bg-color: #656d78;
+  --font-color: #f5f7fa;
+  --border-radius: 7px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: var(--bg-color);
+  color: var(--font-color);
+}
+
+input, label, button {
+  cursor: pointer;
+}
+
+input:disabled, button:disabled {
+  cursor: default;
+}
+
+button {
+  padding: 8px;
+  border-radius: var(--border-radius);
+}
+
+textarea {
+  margin-top: 4px;
+  width: 90%;
+  border-radius: var(--border-radius);
+}
+
+.hidden {
+  display: none;
+}
+
+.loading-icon {
+  display: none;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+button:disabled > .loading-icon {
+  display: inline-block;
+  animation: spin 4s linear infinite;
+}
+
+/** Layout **/
+.section_container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: stretch;
+  gap: 16px;
+}
+section {
+  width: 100%;
+}
+h1 {
+  border-radius: var(--border-radius);
+  background-color: var(--component-bg-color);
+  padding: 4px 0px;
+}
+.container {
+  border-radius: var(--border-radius);
+  background-color: var(--component-bg-color);
+  padding: 8px 12px;
+}
+
+.container > h3:first-child {
+  margin-top: 0;
+}
+
+.container > p:last-child {
+  margin-bottom: 12px;
+}
+
+.info {
+  padding-top: 8px;
+  font-size: 0.9rem;
+}
+
+/** Animations */
+@keyframes spin { 
+  100% { 
+      -webkit-transform: rotate(360deg); 
+      transform:rotate(360deg); 
+  } 
+}

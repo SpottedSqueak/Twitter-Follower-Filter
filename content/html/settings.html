@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitter Follower Filter</title>
+  <link rel="icon" type="image/x-icon" href="./resources/favicon.ico">
+  <script defer src="../js/main.js"></script>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+
+<body>
+  <div class="section_container">
+    <section>
+      <h1>🐭 Twitter Follower Filter | Settings</h1>
+      <form id="setting-form" class="container">
+        <h3>Default Filters:</h3>
+        <div class="group">
+          <input type="checkbox" id="underage" checked><label for="underage">Minors</label>
+          <input type="checkbox" id="zoo" checked><label for="zoo">Zoo accounts</label>
+          <input type="checkbox" id="pedo" checked><label for="pedo">Pedo accounts</label>
+          <div class="info">(Please note: These are <b>experimental</b> checks and can result in both <b>false positives AND negatives!</b><br/>Feel free to include your own filters below!)</div>
+        </div>
+        <h3>Custom Filters:</h3>
+        <span class="info">(one per line, regex okay!)</span>
+        <div class="group">
+          <textarea id="customFilters" rows="10"></textarea>
+        </div>
+        <p><button id="save"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Save settings</button></p>
+      </form>
+      <p class="container">
+        <button id="filter">Filter Followers</button>
+        <button id="query"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Query Followers (Time intensive process!)</button>
+        <button id="stop-query" disabled>Stop Query</button>
+        <button id="export">Export to CSV</button>
+      </p>
+      <h3>Database contains: <span id="follower-count">0</span> followers</h3>
+    </section>
+    <section>
+      <hr />
+      <h2>Followers that match criteria:</h2>
+      <div class="query-controls">
+        <button class="previous" disabled>Previous</button>
+        <button class="next">Next</button>
+      </div>
+      <div id="query-results">No results yet.</div>
+      <div class="query-controls">
+        <button class="previous" disabled>Previous</button>
+        <button class="next">Next</button>
+      </div>
+    </section>
+  </div>
+</body>
+
+</html>
