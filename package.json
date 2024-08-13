@@ -13,7 +13,7 @@
     "build": "npm ci && npx package"
   },
   "author": "SpottedSqueak",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.8.0",
     "@radically-straightforward/package": "^2.0.1",
