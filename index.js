@@ -266,7 +266,7 @@ async function queryTwitter() {
 async function loadFollowers(offset, size = 1000) {
   // Load followers
   followers = followers?.length ? followers : await db.getEntries(offset, size);
-  const customFilters = filters.customFilters.split('\n').map(e => new RegExp(`\b${e.trim()}\b`, 'gi'));
+  const customFilters = filters.customFilters.split('\n').map(e => new RegExp(`\\b${e.trim()}\\b`, 'gi'));
   // Filter through them with given criteria
   const filteredFollowers = followers.filter((f) => {
     let matchFound = false;

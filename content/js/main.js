@@ -103,19 +103,19 @@ async function saveFilters(e) {
   }
   await window['save-settings'](saveData);
   filters = saveData;
+  document.querySelector('#filter').click();
 }
 
 function followerTemplate(fData) {
  return `
-  <div class="follower">
+  <a class="follower" href="${fData.url}">
     <img class="follower-icon" src="${fData.img}"/>
     <div class="follower-info">
       <div class="follower-username">${fData.username}</div>
       <div class="follower-account">${fData.account}</div>
       <div class="follower-bio">${fData.bio}</div>
     </div>
-    <a class="follower-link" href="${fData.url}">Visit Page</a>
-  </div>
+  </a>
   `; 
 }
 
@@ -141,6 +141,10 @@ function setQueryButtons() {
   const next = pageNum * pageSize + pageSize > followers.length;
   document.querySelectorAll('.previous').forEach(e => e.disabled = previous);
   document.querySelectorAll('.next').forEach(e => e.disabled = next);
+  const querySize = document.querySelector('#query-size');
+  querySize.innerHTML = `${followers.length} `;
+  if (!followers.length) querySize.style.display = 'none';
+  else querySize.style.display = 'inline';
 }
 
 function reset() {
