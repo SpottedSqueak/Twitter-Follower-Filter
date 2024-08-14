@@ -14,6 +14,6 @@ export const IGNORE_DEFAULT_PARAMS = [
   `--enable-blink-features=IdleDetection`
 ];
 
-export const UNDERAGE_CHECK = /([^!$£'`\./|\d\w-]1[1-7][^/\%\d\w'|])|\b(high.school|teen|teenager)/gi;
-export const ZOO_CHECK = /(ζ)|(zeta)|(zoo(sex|phile[^s]|positivity|.friend))/gi;
-export const PEDO_CHECK = / (📛|🍭)/gi;
+export const UNDERAGE_CHECK = /([^!$£'`‘\./|\d\w-+]1[1-7][^+:/\%\d\w'|])|\b(high.school|teen|teenager)/i;
+export const ZOO_CHECK = /(ζ)|(zeta)|(zoo(sex|phile[^s]|positivity|.friend))/i;
+export const PEDO_CHECK = / (📛|🍭)/i;

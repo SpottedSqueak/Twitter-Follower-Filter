@@ -14,6 +14,7 @@
   <div class="section_container">
     <section>
       <h1>🐭 Twitter Follower Filter | Settings</h1>
+      <p class="logged-in-status container">Logged in as: <span id="user_account"></span></p>
       <form id="setting-form" class="container">
         <h3>Default Filters:</h3>
         <div class="group">
@@ -27,24 +28,27 @@
         <div class="group">
           <textarea id="customFilters" rows="10"></textarea>
         </div>
-        <p><button id="save"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Save settings</button></p>
+        <p>
+          <button id="save"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Save settings</button>
+          <button id="filter">Filter Followers</button>
+        </p>
       </form>
+      <h3>Database contains: <span id="follower-count">0</span> followers</h3>
       <p class="container">
-        <button id="filter">Filter Followers</button>
         <button id="query"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Query Followers (Time intensive process!)</button>
         <button id="stop-query" disabled>Stop Query</button>
+        <input id="new-query" type="checkbox" checked><label for="new-query">New followers only</label>
         <button id="export">Export to CSV</button>
       </p>
-      <h3>Database contains: <span id="follower-count">0</span> followers</h3>
     </section>
     <section>
       <h2><span id="query-size"></span>Followers that match criteria:</h2>
-      <div class="query-controls">
+      <div class="query-controls container">
         <button class="previous" disabled>Previous</button>
         <button class="next">Next</button>
       </div>
       <div id="query-results">No results yet.</div>
-      <div class="query-controls">
+      <div class="query-controls container">
         <button class="previous" disabled>Previous</button>
         <button class="next">Next</button>
       </div>

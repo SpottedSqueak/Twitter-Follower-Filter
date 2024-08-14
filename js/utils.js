@@ -4,10 +4,11 @@ import { getColumnNames, getEntries } from './database.js';
 import { stringify } from 'csv-stringify';
 /**@import { WriteStream } from 'node:fs' */
 
+const __dirname = import.meta.dirname;
 const fileOptions = {
   mode: 0o770,
 };
-const logPath = './data/logs';
+const logPath = path.resolve(__dirname, '../data/logs');
 /**@type WriteStream */
 let logStream = null;
 let unhookLog = null;
@@ -21,7 +22,7 @@ export async function closeLogs() {
 
 export async function writeFollowersToCSV() {
   const date = new Date();
-  const filePath = path.resolve(`./${date.toJSON().slice(0,10)}_${date.getHours()}-00.csv`);
+  const filePath = path.resolve(logPath, `${date.toJSON().slice(0,10)}_${date.getHours()}-00.csv`);
   // Get all column names, set up stringifier
   const columns = await getColumnNames() || [];
   // Set up writing to file
@@ -64,7 +65,7 @@ export async function setupUtils() {
   unhookErr = hook_stdout(process.stderr, saveToLog);
   await logStream.write('---\n');
   // Clean up log files
-  fs.readdir(logPath, (_err, files) => {
+  fs.readdir(path.resolve(logPath), (_err, files) => {
     files.reverse().slice(5).forEach(val => {
       fs.remove(path.join(logPath, val));
     });

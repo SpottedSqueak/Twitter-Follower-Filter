@@ -6,17 +6,8 @@ let pageNum = 0;
 const pageSize = 100;
 
 async function init() {
-  filters = await window['load-settings']();
+  await loadSettings();
   setFollowerCount();
-  // Fill out form data
-  const form = document.querySelector('#setting-form');
-  container = document.querySelector('#query-results');
-  let el;
-  for (const i in filters) {
-    el = form.elements[i];
-    if (/(checkbox)|(radio)/i.test(el.type)) el.checked = filters[i];
-    else el.value = filters[i];
-  }
 
   // Setup click events
   document.querySelector('#save').addEventListener('click', async (e) => {
@@ -33,8 +24,7 @@ async function init() {
     e.stopPropagation();
     e.target.disabled = true;
     reset();
-    if (followers.length) displayFollowers();
-    else await loadFollowers();
+    await loadFollowers();
     e.target.disabled = false;
   });
 
@@ -45,22 +35,26 @@ async function init() {
     const countTimer = setInterval(() => {
       setFollowerCount();
     }, 10000);
+    window.onbeforeunload = (e) => {
+      e.preventDefault();
+      return 'showdialogplease';
+    };
     document.querySelector('#stop-query').disabled = false;
     window['query-twitter']()
     .finally(() => {
       clearInterval(countTimer);
       e.target.disabled = false;
       setFollowerCount();
+      window.onbeforeunload = null;
       document.querySelector('#stop-query').disabled = true;
     });
+  });
 
-    document.querySelector('#stop-query').addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.target.disabled = true;
-      await window['stop-query']();
-    });
-    reset();
+  document.querySelector('#stop-query').addEventListener('click', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.target.disabled = true;
+    await window['stop-query']();
   });
 
   document.querySelectorAll('.previous, .next').forEach((el) => el.addEventListener('click', (e) => {
@@ -71,10 +65,12 @@ async function init() {
   }));
 
   document.querySelector('#query-results').addEventListener('click', async (e) => {
-    if (!e.target.href) return;
     e.preventDefault();
     e.stopPropagation();
-    await window['open-url'](e.target.href);
+    if (e.target.classList.contains('unfollow')) {
+      // Unfollow logic here
+    } else if (e.target.closest('a'))
+      await window['open-url'](e.target.closest('a').href);
   });
   document.querySelector('#export').addEventListener('click', async (e) => {
     e.preventDefault();
@@ -83,6 +79,7 @@ async function init() {
     await window['export-to-csv']();
     e.target.disabled = false;
   });
+  reset();
 }
 
 async function setFollowerCount() {
@@ -99,21 +96,39 @@ async function saveFilters(e) {
     el = form.elements[i];
     if (e.target === el) continue;
     if (/(checkbox)|(radio)/i.test(el.type)) saveData[el.id] = el.checked;
-    else saveData[el.id] = el.value;
+    else saveData[el.id] = el.value.trim();
   }
   await window['save-settings'](saveData);
   filters = saveData;
   document.querySelector('#filter').click();
 }
 
+async function loadSettings() {
+  filters = await window['load-settings']();
+  // Fill out form data
+  const form = document.querySelector('#setting-form');
+  container = document.querySelector('#query-results');
+  let el;
+  for (const i in filters) {
+    el = form.elements[i];
+    if (!el) continue;
+    if (/(checkbox)|(radio)/i.test(el.type)) el.checked = filters[i];
+    else el.value = filters[i];
+  }
+  document.querySelector('#user_account').innerHTML = (filters.user_account || '').toUpperCase();
+}
+
 function followerTemplate(fData) {
  return `
   <a class="follower" href="${fData.url}">
-    <img class="follower-icon" src="${fData.img}"/>
+    <div><img class="follower-icon" src="${fData.img}"/></div>
     <div class="follower-info">
       <div class="follower-username">${fData.username}</div>
       <div class="follower-account">${fData.account}</div>
       <div class="follower-bio">${fData.bio}</div>
+    </div>
+    <div class="follower-controls">
+      <button class="unfollow" href="${fData.url}">Unfollow</button>
     </div>
   </a>
   `; 

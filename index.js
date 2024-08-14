@@ -9,9 +9,11 @@ import * as db from './js/database.js';
 import { DEFAULT_BROWSER_PARAMS, IGNORE_DEFAULT_PARAMS, PEDO_CHECK, UNDERAGE_CHECK, ZOO_CHECK } from './js/constants.js';
 import { closeLogs, setupUtils, writeFollowersToCSV } from './js/utils.js';
 
-const userPath = './data/user-data';
-const defaultPath = './data/default';
-const userSettings = './data/user-settings.json';
+const __dirname = import.meta.dirname;
+const userPath = path.resolve(__dirname, './data/user-data');
+const defaultPath = path.resolve(__dirname, './data/default');
+const userSettings = path.resolve(__dirname, './data/user-settings.json');
+const cssPath = path.resolve(__dirname, 'content/css/userChrome.css');
 const browserChoice = 'browser.json';
 const loadOpts = {
   waitUntil: 'domcontentloaded',
@@ -28,6 +30,7 @@ let tBrowser = null;
 /** @type Page */
 let page = null;
 
+export let user_account = '';
 let followers = [];
 
 function sleep(ms = 500) {
@@ -45,7 +48,10 @@ async function saveSettings(newSettings) {
 }
 
 async function loadSettings() {
-  return fs.readJson(userSettings).catch(() => ({}));
+  return fs.readJson(userSettings).then(d => {
+    d.user_account = user_account;
+    return d;
+  }).catch(() => ({}));
 }
 
 async function getbrowserInfo() {
@@ -69,11 +75,11 @@ async function getbrowserInfo() {
 async function setupBrowser() {
   const browserInfo = await getbrowserInfo();
   // Make sure the User profiles exist
-  await fs.ensureDir(path.resolve(userPath));
-  await fs.ensureDir(path.resolve(defaultPath));
+  await fs.ensureDir(userPath);
+  await fs.ensureDir(defaultPath);
   // Update chrome.css file (for Firefox)
-  await fs.copy(path.resolve('./content/css/userChrome.css'), path.resolve(userPath + '/chrome/userChrome.css'));
-  await fs.copy(path.resolve('./content/css/userChrome.css'), path.resolve(defaultPath + '/chrome/userChrome.css'));
+  await fs.copy(cssPath, path.resolve(userPath, '/chrome/userChrome.css'));
+  await fs.copy(cssPath, path.resolve(defaultPath, '/chrome/userChrome.css'));
   // Set up browser
   browserSettings = {
     ...browserInfo,
@@ -116,7 +122,7 @@ async function openSettings() {
   page.exposeFunction('export-to-csv', writeFollowersToCSV);
 
   // Load settings page
-  const url = path.join('file://', path.resolve('./content/html/settings.html'));
+  const url = path.join('file://', path.resolve(__dirname, 'content/html/settings.html'));
   await page.goto(url);
 }
 
@@ -128,20 +134,37 @@ async function openSettings() {
  */
 async function getDataFromElement(handle) {
   const data = await handle.evaluate(el => {
-    const eData = {
+    let eData = {
       url: el.querySelector('a').href.trim(),
       img: el.querySelector('img').src.trim(),
       username: el.querySelector('div > div:last-child > div:first-child > div:first-child > div > div:first-child')?.textContent.trim() || '',
       account: el.querySelector('div > div:last-child > div:first-child > div:first-child > div > div:last-child > div:first-child').textContent.trim(),
       bio: el.querySelector('div > div[dir="auto"]:not([id])')?.textContent.trim() || '',
     };
-    eData.allText = [eData.username, eData.account, eData.bio].join(' ');
+    eData = {
+      ...eData,
+      allText: [eData.username, eData.account, eData.bio].join(' '),
+      user_account,
+    };
     return eData;
   });
   return data;
 }
-
-async function checkLogin() {
+async function forceLogin(loginPage, profileLink) {
+  if (!profileLink) {
+    // Not logged in, show window
+    await tBrowser.close();
+    console.log('Asking user to log in...');
+    tBrowser = await puppeteer.launch({ ...tBrowserSettings, ...{ headless: false }});
+    loginPage = (await tBrowser.pages())[0];
+    tBrowser.once('disconnect', () => controller.abort('User aborted'));
+    await loginPage.goto('https://x.com', loadOpts);
+    
+    profileLink = await loginPage.waitForSelector(profileSel, { timeout: 0, signal }).catch(() => console.log('Canceling login...'));
+  }
+  return profileLink;
+}
+async function checkLogin(skipForceLogin = false) {
   const controller = new AbortController();
   const signal = controller.signal;
   const tBrowserSettings = { ...browserSettings, ...{ headless: true, userDataDir: userPath }};
@@ -154,19 +177,11 @@ async function checkLogin() {
   const profileSel = 'a[aria-label="Profile"]';
   let profileLink = await loginPage.waitForSelector(profileSel, { timeout: 2000 })
   .catch(() => console.log('Not logged in!'));
-  if (!profileLink) {
-    // Not logged in, show window
-    await tBrowser.close();
-    console.log('Asking user to log in...');
-    tBrowser = await puppeteer.launch({ ...tBrowserSettings, ...{ headless: false }});
-    loginPage = (await tBrowser.pages())[0];
-    tBrowser.once('disconnect', () => controller.abort('User aborted'));
-    await loginPage.goto('https://x.com', loadOpts);
-    
-    profileLink = await loginPage.waitForSelector(profileSel, { timeout: 0, signal }).catch(() => console.log('Canceling login...'));
-  }
+  if (!skipForceLogin) profileLink = forceLogin(loginPage, profileLink);
   if (!profileLink) return;
   const username = await profileLink.evaluate(el => el.href);
+  user_account = username.split('/').pop().toLowerCase();
+  if (skipForceLogin) return tBrowser.close();
   // Close login page
   await tBrowser.close();
   // Open headless browser to scrape followers
@@ -265,8 +280,9 @@ async function queryTwitter() {
 
 async function loadFollowers(offset, size = 1000) {
   // Load followers
-  followers = followers?.length ? followers : await db.getEntries(offset, size);
-  const customFilters = filters.customFilters.split('\n').map(e => new RegExp(`\\b${e.trim()}\\b`, 'gi'));
+  followers = followers?.length ? followers : await db.getEntries(user_account);
+  const customFilters = filters.customFilters.split('\n')
+    .filter(e => !!e.trim()).map(e => new RegExp(`\\b${e.trim()}\\b`, 'gi'));
   // Filter through them with given criteria
   const filteredFollowers = followers.filter((f) => {
     let matchFound = false;
@@ -283,7 +299,8 @@ async function loadFollowers(offset, size = 1000) {
         break;
       }
       // Custom filters
-      matchFound = customFilters.some(regex => regex.test(f.allText));
+      if (customFilters.length)
+        matchFound = customFilters.some(regex => regex.test(f.allText));
       break;
     }
     return matchFound;
@@ -297,6 +314,7 @@ async function init() {
   await setupUtils();
   await db.openDB();
   await setupBrowser();
+  await checkLogin(true);
   await openSettings();
   console.log('Program loaded!');
 }

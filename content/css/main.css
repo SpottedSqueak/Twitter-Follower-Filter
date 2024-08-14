@@ -28,6 +28,12 @@ button {
   border-radius: var(--border-radius);
 }
 
+button + button,
+label + button,
+button + input {
+  margin-left: 8px;
+}
+
 textarea {
   margin-top: 4px;
   width: 90%;
@@ -62,8 +68,6 @@ section {
   flex-basis: 100%;
 }
 h1 {
-  border-radius: var(--border-radius);
-  background-color: var(--component-bg-color);
   padding: 4px 0px;
 }
 .container {
@@ -80,15 +84,10 @@ h1 {
   margin-bottom: 12px;
 }
 
-.info {
-  padding-top: 8px;
-  font-size: 0.9rem;
-}
-
 .query-controls {
   display: flex;
   justify-content: space-between;
-  padding-right: 16px;
+  padding: 8px 16px;
 }
 
 #query-results {
@@ -98,20 +97,31 @@ h1 {
   overflow-y: scroll;
 }
 
+#user_account {
+  font-weight: bold;
+  padding-left: 4px;
+}
+
 /** Follower info **/
 .follower {
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: 50px 1fr;
+  grid-template-columns: 50px 1fr 100px;
   gap: 12px;
   cursor: pointer;
   text-decoration: none;
   color: var(--font-color);
-  padding-right: 18px;
+  background-color: transparent;
+  text-align: left;
+  width: 100%;
+  margin-left: 0;
+  border: 1px solid var(--font-color);
+  padding: 8px;
+  border-radius: var(--border-radius);
 }
 .follower + .follower {
   margin-top: 12px;
   padding-top: 8px;
-  border-top: 1px solid var(--font-color);
 }
 .follower-icon {
   aspect-ratio: 1/1;
@@ -127,8 +137,11 @@ h1 {
 .follower-account {
   margin-bottom: 8px;
 }
-
-
+.follower-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /** Animations */
 @keyframes spin { 

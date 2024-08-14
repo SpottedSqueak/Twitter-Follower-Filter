@@ -2,11 +2,13 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { ensureFile } from 'fs-extra/esm';
 import path from 'node:path';
+import { user_account } from '../index.js';
 /**@import { Database } from 'sqlite' */
 
 sqlite3.verbose();
 
-const databasePath = './data/follower.db';
+const __dirname = import.meta.dirname;
+const databasePath = '../data/follower.db';
 /**@type Database */
 let db = null;
 
@@ -17,6 +19,7 @@ let db = null;
  */
 export async function addEntries(entries = []) {
   if (!entries.length) return;
+  let keys = `${Object.keys(entries[0]).join(', ')}`;
   let placeholders = entries
     // Create map of placeholder slots (i.e [(?,?,?), (?,?,?)])
     .map((val) => `(${Object.keys(val).map(() => '?').join(',')})`)
@@ -26,7 +29,7 @@ export async function addEntries(entries = []) {
   let data = entries.flatMap((val) => Object.values(val));
   // Build query
   return db.run(`
-    INSERT INTO followerdata (url, img, username, account, bio, allText)
+    INSERT INTO followerdata (${keys})
     VALUES ${placeholders}
   `, data);
 }
@@ -43,6 +46,7 @@ export async function getEntries() {
     SELECT *
     FROM followerdata
     WHERE url IS NOT NULL
+      AND user_account = '${user_account}'
     ORDER BY id DESC
   `);
 }
@@ -55,6 +59,7 @@ export async function getEntriesCount() {
   return db.get(`
     SELECT COUNT(id) AS count
     FROM followerdata
+    WHERE user_account = '${user_account}'
   `).then(d => d.count);
 }
 
@@ -66,6 +71,7 @@ export async function getEntriesCount() {
 export async function clearEntries() {
   return db.run(`
     DELETE FROM followerdata
+    WHERE user_account = '${user_account}'
   `);
 }
 
@@ -99,6 +105,12 @@ async function setupDB(database) {
         allText TEXT
       )`)
       version = 1;
+    case 1:
+      await db.exec(`
+        ALTER TABLE followerdata
+        ADD COLUMN user_account TEXT
+      `).catch(console.error);
+      version = 2;
     
     default:
       await db.exec('VACUUM');
@@ -113,9 +125,9 @@ async function setupDB(database) {
  * @returns {Promise<Database>}
  */
 export async function openDB() {
-  await ensureFile(path.resolve(databasePath));
+  await ensureFile(path.resolve(__dirname, databasePath));
   return open({
-    filename: path.resolve(databasePath),
+    filename: path.resolve(__dirname, databasePath),
     driver: sqlite3.cached.Database,
   }).then(setupDB);
 }
