@@ -47,7 +47,7 @@ export async function getEntries() {
     FROM followerdata
     WHERE url IS NOT NULL
       AND user_account = '${user_account}'
-    ORDER BY id DESC
+    ORDER BY id ASC
   `);
 }
 /**
