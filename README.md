@@ -46,6 +46,7 @@ Start it up, enter in/choose your filters, and click `Filter Followers` to have 
 - [ ] Unfollow button functionality
 - [ ] Remove entries from database when unfollowed
 - [ ] "New Followers Only" scraping method
+- [ ] Ensure last followers are loaded (scroll up then back down maybe?)
 
 ## Known Issues
 
