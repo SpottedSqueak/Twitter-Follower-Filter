@@ -42,6 +42,10 @@ Start it up, enter in/choose your filters, and click `Filter Followers` to have 
 ## #TODO
 
 - [ ] Clean up follower query loop
+- [ ] Logout option
+- [ ] Unfollow button functionality
+- [ ] Remove entries from database when unfollowed
+- [ ] "New Followers Only" scraping method
 
 ## Known Issues
 
