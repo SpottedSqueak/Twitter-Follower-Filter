@@ -67,8 +67,8 @@ async function init() {
   document.querySelector('#query-results').addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.target.classList.contains('unfollow')) {
-      // Unfollow logic here
+    if (e.target.classList.contains('remove')) {
+      // remove logic here
     } else if (e.target.closest('a'))
       await window['open-url'](e.target.closest('a').href);
   });
@@ -78,6 +78,22 @@ async function init() {
     e.target.disabled = true;
     await window['export-to-csv']();
     e.target.disabled = false;
+  });
+  document.querySelector('.user-logout').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window['user-logout']().finally(() => {
+      loadSettings();
+      reset();
+    });
+  });
+  document.querySelector('.user-login').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window['user-login']().finally(() => {
+      loadSettings();
+      reset();
+    });
   });
   reset();
 }
@@ -96,6 +112,7 @@ async function saveFilters(e) {
     el = form.elements[i];
     if (e.target === el) continue;
     if (/(checkbox)|(radio)/i.test(el.type)) saveData[el.id] = el.checked;
+    else if (/button/i.test(el.type)) continue;
     else saveData[el.id] = el.value.trim();
   }
   await window['save-settings'](saveData);
@@ -115,7 +132,14 @@ async function loadSettings() {
     if (/(checkbox)|(radio)/i.test(el.type)) el.checked = filters[i];
     else el.value = filters[i];
   }
+  setUserAccount();
+}
+
+function setUserAccount() {
+  const loggedin = !!filters.user_account;
   document.querySelector('#user_account').innerHTML = (filters.user_account || '').toUpperCase();
+  document.querySelector('.logged-in').style.display = loggedin ? 'block' : 'none';
+  document.querySelector('.logged-out').style.display = loggedin ? 'none': 'block';
 }
 
 function followerTemplate(fData) {
@@ -128,7 +152,7 @@ function followerTemplate(fData) {
       <div class="follower-bio">${fData.bio}</div>
     </div>
     <div class="follower-controls">
-      <button class="unfollow" href="${fData.url}">Unfollow</button>
+      <button class="remove" href="${fData.url}">Remove</button>
     </div>
   </a>
   `; 
@@ -165,6 +189,7 @@ function setQueryButtons() {
 function reset() {
   pageNum = 0;
   followers = [];
+  setFollowerCount();
   setQueryButtons();
   container.innerHTML = '';
 }

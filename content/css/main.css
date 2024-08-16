@@ -102,6 +102,14 @@ h1 {
   padding-left: 4px;
 }
 
+.logged-in, .logged-out {
+  overflow: hidden;
+}
+.logged-in-status a, .logged-in-status:visited {
+  float: right;
+  color: var(--font-color);
+}
+
 /** Follower info **/
 .follower {
   box-sizing: border-box;

@@ -38,13 +38,13 @@ Start it up, enter in/choose your filters, and click `Filter Followers` to have 
 ## #DONE
 
 - [x] Initial functionality (query followers, filter followers, add own filters, etc.)
+- [x] Login/Logout option
 
 ## #TODO
 
-- [ ] Clean up follower query loop
-- [ ] Logout option
-- [ ] Unfollow button functionality
-- [ ] Remove entries from database when unfollowed
+- [~] Clean up follower query loop
+- [ ] Remove follow button functionality
+- [ ] Remove entries from database when removed from followers
 - [ ] "New Followers Only" scraping method
 - [ ] Ensure last followers are loaded (scroll up then back down maybe?)
 

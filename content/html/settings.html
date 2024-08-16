@@ -14,7 +14,16 @@
   <div class="section_container">
     <section>
       <h1>🐭 Twitter Follower Filter | Settings</h1>
-      <p class="logged-in-status container">Logged in as: <span id="user_account"></span></p>
+      <p class="logged-in-status container">
+        <span class="logged-in hidden">
+          Logged in as: <span id="user_account"></span>
+          <a class="user-logout" href="#/logout">Logout</a>
+        </span>
+        <span class="logged-out">
+          Not logged in!
+          <a class="user-login" href="#/login">Login</a>
+        </span>
+      </p>
       <form id="setting-form" class="container">
         <h3>Default Filters:</h3>
         <div class="group">
