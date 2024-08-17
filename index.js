@@ -273,6 +273,8 @@ async function queryTwitter(path='followers') {
         followersToAdd.push(newData);
       }
     }
+    // Check for repeat entries, exit if set to only update
+    // #TODO
     db.addEntries(followersToAdd);
     // Scroll down past last element
     if (!isRunning) break followerLoop;
@@ -318,19 +320,17 @@ async function removeFollower(url, isBlock = false) {
     await setupTwitterBrowser();
     isRunning = true;
   }
-  const remove = 'div[role="menuitem"]:nth-child(6)';
+  const remove = 'div[role="menuitem"] ::-p-text(Remove this follower)';
   const block = 'div[data-testid="block"]';
   const fPage = await tBrowser.newPage();
   // Load page
-  await fPage.goto(url);
+  await fPage.goto(url).catch(console.error);
   // Click menu
   const menu = await fPage.locator('button[data-testid="userActions"]').waitHandle();
   await menu.click();
-  await sleep(500);
   // Click unfollow/block
   const opt = await fPage.locator(isBlock ? block : remove).waitHandle();
   await opt.click();
-  await sleep(500);
   const confirm = await fPage.locator('button[data-testid="confirmationSheetConfirm"]').waitHandle();
   await confirm.click();
   await sleep(500);
