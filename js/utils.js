@@ -70,4 +70,13 @@ export async function setupUtils() {
       fs.remove(path.join(logPath, val));
     });
   });
+  // Handle process exceptions
+  process.on('uncaughtException', (e) => {
+    console.error(e);
+    process.exit(2);
+  })
+  .on('unhandledRejection', (e) => {
+    console.error(e);
+    process.exit(3);
+  });
 }

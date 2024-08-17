@@ -15,7 +15,6 @@ async function init() {
     e.stopPropagation();
     e.target.disabled = true;
     await saveFilters(e);
-    reset();
     e.target.disabled = false;
   });
 
@@ -23,7 +22,7 @@ async function init() {
     e.preventDefault();
     e.stopPropagation();
     e.target.disabled = true;
-    reset();
+    await saveFilters(e);
     await loadFollowers();
     e.target.disabled = false;
   });
@@ -31,7 +30,8 @@ async function init() {
   document.querySelector('#query').addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    e.target.disabled = true;
+    const queryBtn = e.target.closest('#query');
+    queryBtn.disabled = true;
     const countTimer = setInterval(() => {
       setFollowerCount();
     }, 10000);
@@ -40,10 +40,11 @@ async function init() {
       return 'showdialogplease';
     };
     document.querySelector('#stop-query').disabled = false;
-    window['query-twitter']()
+    // Gather followers
+    window['gather-followers']()
     .finally(() => {
       clearInterval(countTimer);
-      e.target.disabled = false;
+      queryBtn.disabled = false;
       setFollowerCount();
       window.onbeforeunload = null;
       document.querySelector('#stop-query').disabled = true;
@@ -65,12 +66,19 @@ async function init() {
   }));
 
   document.querySelector('#query-results').addEventListener('click', async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.target.classList.contains('remove')) {
-      // remove logic here
-    } else if (e.target.closest('a'))
-      await window['open-url'](e.target.closest('a').href);
+    const btn = e.target.closest('button');
+    const container = e.target.closest('a');
+    if (btn || container) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (btn) {
+      await window['remove-follower'](btn.dataset.href, btn.classList.contains('block'));
+      followers = followers.filter(d => d.url !== url);
+      displayFollowers();
+    } else if (container) {
+      await window['open-url'](container.href);
+    }
   });
   document.querySelector('#export').addEventListener('click', async (e) => {
     e.preventDefault();
@@ -136,15 +144,15 @@ async function loadSettings() {
 }
 
 function setUserAccount() {
-  const loggedin = !!filters.user_account;
-  document.querySelector('#user_account').innerHTML = (filters.user_account || '').toUpperCase();
+  const loggedin = !!filters.userAccount;
+  document.querySelector('#userAccount').innerHTML = (filters.userAccount || '').toUpperCase();
   document.querySelector('.logged-in').style.display = loggedin ? 'block' : 'none';
   document.querySelector('.logged-out').style.display = loggedin ? 'none': 'block';
 }
 
 function followerTemplate(fData) {
  return `
-  <a class="follower" href="${fData.url}">
+  <a class="follower" href="${fData.url}" draggable="false">
     <div><img class="follower-icon" src="${fData.img}"/></div>
     <div class="follower-info">
       <div class="follower-username">${fData.username}</div>
@@ -152,7 +160,8 @@ function followerTemplate(fData) {
       <div class="follower-bio">${fData.bio}</div>
     </div>
     <div class="follower-controls">
-      <button class="remove" href="${fData.url}">Remove</button>
+      <button class="remove" data-href="${fData.url}">Remove</button>
+      <button class="block" data-href="${fData.url}">Block</button>
     </div>
   </a>
   `; 

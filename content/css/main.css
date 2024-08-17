@@ -97,7 +97,7 @@ h1 {
   overflow-y: scroll;
 }
 
-#user_account {
+#userAccount {
   font-weight: bold;
   padding-left: 4px;
 }
@@ -147,8 +147,16 @@ h1 {
 }
 .follower-controls {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  row-gap: 12px;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.follower-controls > button {
+  display: block;
+  width: 100%;
+  margin: 0;
 }
 
 /** Animations */

@@ -33,20 +33,19 @@ You'll need [@radically-straightforward/package](https://github.com/radically-st
 
 ## How it works
 
-Start it up, enter in/choose your filters, and click `Filter Followers` to have it get to work.
+Start it up, login, enter in/choose your filters, and click `Filter Followers` to have it get to work.
 
 ## #DONE
-
 - [x] Initial functionality (query followers, filter followers, add own filters, etc.)
 - [x] Login/Logout option
+- [x] Clean up follower query loop (best I can do right now!)
+- [x] Ensure last followers are loaded (scroll up then back down maybe?)
+- [x] "Remove follow" button functionality
+- [x] Remove entries from database when removed from followers
 
 ## #TODO
-
-- [~] Clean up follower query loop
-- [ ] Remove follow button functionality
-- [ ] Remove entries from database when removed from followers
 - [ ] "New Followers Only" scraping method
-- [ ] Ensure last followers are loaded (scroll up then back down maybe?)
+- [ ] Replace "waitForSelector" with "locator"
 
 ## Known Issues
 

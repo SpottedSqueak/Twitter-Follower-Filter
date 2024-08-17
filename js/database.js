@@ -2,7 +2,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { ensureFile } from 'fs-extra/esm';
 import path from 'node:path';
-import { user_account } from '../index.js';
+import { userAccount } from '../index.js';
 /**@import { Database } from 'sqlite' */
 
 sqlite3.verbose();
@@ -12,6 +12,10 @@ const databasePath = '../data/follower.db';
 /**@type Database */
 let db = null;
 
+function dbError(err) {
+  console.error(err);
+  process.exit(1);
+}
 /**
  * 
  * @param {Array} entries 
@@ -31,7 +35,16 @@ export async function addEntries(entries = []) {
   return db.run(`
     INSERT INTO followerdata (${keys})
     VALUES ${placeholders}
-  `, data);
+  `, data).catch(dbError);
+}
+
+export async function hasEntry(url) {
+  return db.get(`
+    SELECT followerid
+    FROM followerdata
+    WHERE url = '${url}'
+      AND userAccount = '${userAccount}'
+  `).then((d) => !!d).catch(console.error);
 }
 
 /**
@@ -46,9 +59,9 @@ export async function getEntries() {
     SELECT *
     FROM followerdata
     WHERE url IS NOT NULL
-      AND user_account = '${user_account}'
-    ORDER BY id ASC
-  `);
+      AND userAccount = '${userAccount}'
+    ORDER BY rowid ASC
+  `).catch(dbError);
 }
 /**
  * Queries the database to get the number of records.
@@ -57,12 +70,25 @@ export async function getEntries() {
  */
 export async function getEntriesCount() {
   return db.get(`
-    SELECT COUNT(id) AS count
+    SELECT COUNT(rowid) AS count
     FROM followerdata
-    WHERE user_account = '${user_account}'
-  `).then(d => d.count);
+    WHERE userAccount = '${userAccount}'
+  `).then(d => d.count).catch(dbError);
 }
 
+/**
+ * Delete entry for given url for current user account.
+ * 
+ * @param {String} url 
+ * @returns {Promise<void>}
+ */
+export async function deleteEntry(url) {
+  return db.run(`
+    DELETE FROM followerdata
+    WHERE userAccount = '${userAccount}'
+      AND url = '${url}'
+  `).catch(dbError);
+}
 /**
  * Deletes all entries in the database.
  * 
@@ -71,8 +97,8 @@ export async function getEntriesCount() {
 export async function clearEntries() {
   return db.run(`
     DELETE FROM followerdata
-    WHERE user_account = '${user_account}'
-  `);
+    WHERE userAccount = '${userAccount}'
+  `).catch(dbError);
 }
 
 export async function getColumnNames() {
@@ -80,7 +106,7 @@ export async function getColumnNames() {
     SELECT name FROM PRAGMA_TABLE_INFO('followerdata');
   `)
   .then(d => d.map(e => e.name))
-  .catch(console.error);
+  .catch(dbError);
 }
 
 /**
@@ -96,8 +122,8 @@ async function setupDB(database) {
     case 0:
       await db.exec(`
       CREATE TABLE IF NOT EXISTS followerdata (
-        id INTEGER PRIMARY KEY,
-        url TEXT UNIQUE ON CONFLICT REPLACE,
+        followerid UNIQUE ON CONFLICT REPLACE,
+        url TEXT,
         img TEXT,
         username TEXT,
         account TEXT,
@@ -108,8 +134,8 @@ async function setupDB(database) {
     case 1:
       await db.exec(`
         ALTER TABLE followerdata
-        ADD COLUMN user_account TEXT
-      `).catch(console.error);
+        ADD COLUMN userAccount TEXT
+      `).catch(dbError);
       version = 2;
     
     default:
