@@ -13,7 +13,13 @@
 <body>
   <div class="section_container">
     <section>
-      <h1>🐭 Twitter Follower Filter | Settings</h1>
+      <h1>🐭 Twitter Follower Filter |
+        <span id="release-info">
+          Current: <span class="current">Loading...</span>
+          <span class="latest-container"> | Latest: <span class="latest">Loading...</span></span>
+          &nbsp;| <a href="">Releases</a>
+        </span>
+      </h1>
       <p class="logged-in-status container">
         <span class="logged-in hidden">
           Logged in as: <span id="userAccount"></span>
@@ -49,6 +55,7 @@
         <input id="new-query" type="checkbox" checked><label for="new-query">New followers only</label>
         <button id="export">Export to CSV</button>
       </p>
+      <div class="console"></div>
     </section>
     <section>
       <h2><span id="query-size"></span>Followers that match criteria:</h2>

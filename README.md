@@ -42,10 +42,11 @@ Start it up, login, enter in/choose your filters, and click `Filter Followers` t
 - [x] Ensure last followers are loaded (scroll up then back down maybe?)
 - [x] "Remove follow" button functionality
 - [x] Remove entries from database when removed from followers
+- [x] Replace "waitForSelector" with "locator"
+- [x] Version checking
 
 ## #TODO
 - [ ] "New Followers Only" scraping method
-- [ ] Replace "waitForSelector" with "locator"
 
 ## Known Issues
 

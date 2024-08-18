@@ -2,13 +2,19 @@ let filters = {};
 let followers = [];
 let container = null;
 // Pagination
-let pageNum = 0;
 const pageSize = 100;
+let pageNum = 0;
+let consoleDiv = null;
 
 async function init() {
   await loadSettings();
   setFollowerCount();
-
+  // Check for a new version every hour
+  setInterval(() => {
+    window['get-version']().then(setVersion);
+  }, 60 * 60 * 1000);
+  // Setup console
+  consoleDiv = document.querySelector('.console');
   // Setup click events
   document.querySelector('#save').addEventListener('click', async (e) => {
     e.preventDefault();
@@ -140,7 +146,19 @@ async function loadSettings() {
     if (/(checkbox)|(radio)/i.test(el.type)) el.checked = filters[i];
     else el.value = filters[i];
   }
+  window['get-version']().then(setVersion);
   setUserAccount();
+}
+
+function setVersion({ current, latest }) {
+  const div = document.querySelector('#release-info');
+  div.querySelector('.current').innerHTML = current;
+  if (latest) {
+    div.querySelector('.latest-container').classList.remove('hidden');
+    const lDiv = div.querySelector('.latest');
+    lDiv.innerHTML = latest;
+    lDiv.classList.toggle('alert', current !== latest);
+  } else div.querySelector('.latest-container').classList.add('hidden');
 }
 
 function setUserAccount() {
@@ -193,6 +211,13 @@ function setQueryButtons() {
   querySize.innerHTML = `${followers.length} `;
   if (!followers.length) querySize.style.display = 'none';
   else querySize.style.display = 'inline';
+}
+
+function addToConsole(text) {
+  if (!consoleDiv) return;
+  const str = `<p>${text}</p>`;
+  consoleDiv.innerHTML += str;
+  consoleDiv.scrollTo({ top: -consoleDiv.scrollHeight });
 }
 
 function reset() {

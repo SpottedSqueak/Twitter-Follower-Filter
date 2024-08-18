@@ -2,9 +2,12 @@ import fs from 'fs-extra';
 import path from 'node:path';
 import { getColumnNames, getEntries } from './database.js';
 import { stringify } from 'csv-stringify';
+import * as cheerio from 'cheerio';
+import { page } from '../index.js';
 /**@import { WriteStream } from 'node:fs' */
 
 const __dirname = import.meta.dirname;
+const version = process.env.npm_package_version;
 const fileOptions = {
   mode: 0o770,
 };
@@ -13,6 +16,14 @@ const logPath = path.resolve(__dirname, '../data/logs');
 let logStream = null;
 let unhookLog = null;
 let unhookErr = null;
+
+export function sleep(ms = 500) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function getRandom(max) {
+  return Math.round(Math.random() * (max - 1) + 1);
+}
 
 export async function closeLogs() {
   unhookLog();
@@ -40,7 +51,7 @@ export async function writeFollowersToCSV() {
   console.log('Write complete!');
 }
 
-export async function setupUtils() {
+async function setupLogging() {
   const lPath = path.resolve(logPath);
   await fs.ensureDir(lPath);
   const date = new Date();
@@ -60,6 +71,10 @@ export async function setupUtils() {
   }
   async function saveToLog(string, encoding) {
     await logStream.write(`[${new Date().toISOString()}] ${string}`, encoding);
+    if (page?.isClosed()) return;
+    await page?.evaluate((text) => {
+      if (window?.addToConsole) window.addToConsole(text);
+    }, `${string}`);
   }
   unhookLog = hook_stdout(process.stdout, saveToLog);
   unhookErr = hook_stdout(process.stderr, saveToLog);
@@ -70,6 +85,22 @@ export async function setupUtils() {
       fs.remove(path.join(logPath, val));
     });
   });
+}
+
+export async function getVersion() {
+  const data = { current: version };
+  const html = await fetch('https://github.com/SpottedSqueak/Twitter-Follower-Filter/releases')
+    .catch(() => false);
+  if (html) {
+    const $ = cheerio.load(html);
+    const latest = $('a.Link--primary').first()?.text()?.replace('v', '');
+    if (latest) data.latest = latest;
+  }
+  return data;
+}
+
+export async function setupUtils() {
+  await setupLogging();
   // Handle process exceptions
   process.on('uncaughtException', (e) => {
     console.error(e);

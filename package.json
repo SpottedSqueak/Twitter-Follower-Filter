@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node ./build/index.mjs",
     "lint": "eslint *.js",
     "lint:fix": "eslint js --fix",
     "lint:init": "eslint --init",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "browser-paths": "^1.1.5",
+    "cheerio": "^1.0.0",
     "csv-stringify": "^6.5.1",
     "fs-extra": "^11.2.0",
     "open": "^10.1.0",

@@ -1,8 +1,10 @@
 :root {
   --bg-color: #181818;
+  --bg-color-odd: #2b2b2b;
   --component-bg-color: #656d78;
   --font-color: #f5f7fa;
   --border-radius: 7px;
+  --warn-color: red;
 }
 
 * {
@@ -13,6 +15,14 @@ html, body {
   background-color: var(--bg-color);
   color: var(--font-color);
   overflow: hidden;
+}
+
+a, a:visited {
+  color: var(--font-color);
+}
+
+a:hover {
+  text-decoration: none;
 }
 
 input, label, button {
@@ -44,6 +54,11 @@ textarea {
   display: none;
 }
 
+.alert {
+  color: var(--warn-color);
+  vertical-align: text-top;
+}
+
 .loading-icon {
   display: none;
   width: 18px;
@@ -68,7 +83,19 @@ section {
   flex-basis: 100%;
 }
 h1 {
+  position: relative;
   padding: 4px 0px;
+}
+h1 > span {
+  position: absolute;
+  display: inline-flex;
+  height: 100%;
+  font-weight: normal !important;
+  font-size: 1rem;
+  gap: 4px;
+  right: 0;
+  align-items: center;
+  vertical-align: middle;
 }
 .container {
   border-radius: var(--border-radius);
@@ -157,6 +184,27 @@ h1 {
   display: block;
   width: 100%;
   margin: 0;
+}
+
+.console {
+  display: flex;
+  width: 100%;
+  height: 172px;
+  flex-direction: column-reverse;
+  border: 1px solid var(--font-color);
+  border-radius: var(--border-radius);
+  background-color: var(--bg-color);
+  overflow-y: auto;
+  padding: 0 4px;
+}
+
+.console p {
+  margin: 0;
+  padding: 4px 0;
+}
+
+.console p:nth-child(odd) {
+  background-color: var(--bg-color-odd);
 }
 
 /** Animations */
