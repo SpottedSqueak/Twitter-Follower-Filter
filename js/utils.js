@@ -43,16 +43,19 @@ export async function writeFollowersToCSV() {
   // Get all column names, set up stringifier
   const columns = await getColumnNames() || [];
   // Set up writing to file
-  await new Promise(async (resolve) => {
-    const followers = (await getEntries())?.map(e => Object.values(e).slice(1));
+  const followers = (await getEntries())?.map(e => Object.values(e).slice(1));
+  await new Promise((resolve, reject) => {
     console.log(`Writing ${followers.length} followers to file!`);
-    const stringifier = stringify(followers,
+    stringify(followers,
       { header: true, columns: columns?.slice(1) },
       (err, output) => {
-        if (err) console.error(e);
-        else fse.writeFile(filePath, output);
-        resolve();
-      });
+        if (err) {
+          reject(err);
+        } else {
+          fse.writeFile(filePath, output);
+          resolve();
+        }
+      }).catch(console.error);
   });
   console.log('Write complete!');
 }

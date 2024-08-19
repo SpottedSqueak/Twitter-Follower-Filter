@@ -215,7 +215,7 @@ async function checkLogin(skipForceLogin = false) {
 async function queryTwitter(path = 'followers') {
   // Open headless browser to scrape followers
   isRunning = true;
-  await setupTwitterBrowser(false);
+  await setupTwitterBrowser();
   const twitterPage = await tBrowser.newPage();
   const followerUrl = `${profileURL}/${path}`;
   // Go to the follower page
@@ -241,6 +241,7 @@ async function queryTwitter(path = 'followers') {
   let newMinHeight = null;
   let minHeight = null;
   let retryCount = 0;
+  // let prevFollowers = [];
   followerLoop: do {
     if (!isRunning) break followerLoop;
     newMinHeight = await heightDiv.evaluate(el => Number(el.style.minHeight.replace('px', '')));
