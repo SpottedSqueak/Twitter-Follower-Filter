@@ -15,6 +15,7 @@ html, body {
   background-color: var(--bg-color);
   color: var(--font-color);
   overflow: hidden;
+  font-size: 16px;
 }
 
 a, a:visited {
@@ -61,9 +62,9 @@ textarea {
 
 .loading-icon {
   display: none;
-  width: 18px;
-  height: 18px;
-  vertical-align: middle;
+  width: 1em;
+  height: 1em;
+  vertical-align: text-top;
   margin-right: 5px;
 }
 

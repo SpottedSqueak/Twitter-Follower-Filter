@@ -7,14 +7,14 @@ import fs from 'fs-extra';
 import path from 'node:path';
 import * as db from './js/database.js';
 import { DEFAULT_BROWSER_PARAMS, IGNORE_DEFAULT_PARAMS, PEDO_CHECK, UNDERAGE_CHECK, ZOO_CHECK } from './js/constants.js';
-import { sleep, getRandom, closeLogs, setupUtils, writeFollowersToCSV, getVersion } from './js/utils.js';
+import { sleep, getRandom, closeLogs, setupUtils, writeFollowersToCSV, getVersion, hideConsole } from './js/utils.js';
 
 const __dirname = import.meta.dirname;
 const userPath = path.resolve(__dirname, './data/user-data');
 const defaultPath = path.resolve(__dirname, './data/default');
 const userSettings = path.resolve(__dirname, './data/user-settings.json');
-const cssPath = path.resolve(__dirname, 'content/css/userChrome.css');
-const browserChoice = 'browser.json';
+const cssPath = path.resolve(__dirname, './content/css/userChrome.css');
+const browserChoice = path.resolve(__dirname, './browser.json');
 const loadOpts = {
   waitUntil: 'load',
   timeout: 3000,
@@ -43,6 +43,7 @@ export let userAccount = '';
 let followers = [];
 
 async function saveSettings(newSettings) {
+  console.log('Saving settings...');
   filters = newSettings;
   await fs.writeJson(userSettings, newSettings);
   return sleep(500);
@@ -80,8 +81,8 @@ async function setupBrowser() {
   await fs.ensureDir(userPath);
   await fs.ensureDir(defaultPath);
   // Update chrome.css file (for Firefox)
-  await fs.copy(cssPath, path.resolve(userPath, '/chrome/userChrome.css'));
-  await fs.copy(cssPath, path.resolve(defaultPath, '/chrome/userChrome.css'));
+  await fs.copy(cssPath, path.join(userPath, '/chrome/userChrome.css'));
+  await fs.copy(cssPath, path.join(defaultPath, '/chrome/userChrome.css'));
   // Set up browser
   browserSettings = {
     ...browserInfo,
@@ -110,7 +111,6 @@ async function setupBrowser() {
   });
 
   page = (await browser.pages())[0] || await browser.newPage();
-  await page.reload();
 }
 
 async function setupTwitterBrowser(headless = true, userDataDir = tBrowserSettings.userDataDir) {
@@ -179,7 +179,7 @@ async function forceLogin() {
   console.log('Asking user to log in...');
   await setupTwitterBrowser(false);
   const loginPage = (await tBrowser.pages())[0];
-  await loginPage.goto('https://x.com', loadOpts);
+  await loginPage.goto('https://www.x.com', loadOpts).catch(console.error);
   const aController = new AbortController();
   tBrowser.once('disconnected', () => aController.abort());
   const profileLink = await loginPage.locator(profileSel).setTimeout(0).waitHandle({ signal: aController.signal })
@@ -194,12 +194,10 @@ async function checkLogin(skipForceLogin = false) {
   userAccount = '';
   await setupTwitterBrowser();
   //Log in to Twitter
-  const pages = await tBrowser.pages();
-  let loginPage = pages[0];
+  let loginPage = await tBrowser.newPage();
   console.log('Checking login...');
-  await loginPage.goto('https://x.com');
+  await loginPage.goto('https://www.x.com').catch(console.error);
   // Check for login...
-  // let profileLink = await loginPage.waitForSelector(profileSel, { timeout: 2000 })
   let profileLink = await loginPage.locator(profileSel).setTimeout(2000).waitHandle()
     .catch(() => console.log('Not logged in!'));
   if (!skipForceLogin && !profileLink) profileLink = await forceLogin();
@@ -208,6 +206,7 @@ async function checkLogin(skipForceLogin = false) {
     return false;
   }
   if (!userAccount) await setUsername(profileLink);
+  await profileLink.dispose();
   // Close login page
   await tBrowser?.close();
   return true;
@@ -216,7 +215,7 @@ async function checkLogin(skipForceLogin = false) {
 async function queryTwitter(path = 'followers') {
   // Open headless browser to scrape followers
   isRunning = true;
-  await setupTwitterBrowser();
+  await setupTwitterBrowser(false);
   const twitterPage = await tBrowser.newPage();
   const followerUrl = `${profileURL}/${path}`;
   // Go to the follower page
@@ -298,7 +297,7 @@ async function queryTwitter(path = 'followers') {
     newMinHeight = await heightDiv.evaluate(el => Number(el.style.minHeight.replace('px', '')));
     await sleep(5000 + getRandom(1000));
   } while (isRunning);
-  followerContainer.dispose();
+  await followerContainer.dispose();
   if (!isRunning) return Promise.reject('User exited');
   else tBrowser.off('disconnected');
   return Promise.resolve();
@@ -356,6 +355,7 @@ async function stopQuery() {
 
 async function gatherFollowers() {
   if (isRunning) return false;
+  if (!profileURL) return console.log('Please login first!');
   await queryTwitter('verified_followers')
     .then(queryTwitter)
     .then(() => console.log('Follower collection complete!'))
@@ -369,7 +369,7 @@ async function gatherFollowers() {
 async function loadFollowers() {
   if (!userAccount) return;
   // Load followers
-  followers = followers?.length ? followers : await db.getEntries(userAccount);
+  followers = followers?.length ? followers : await db.getEntries();
   const customFilters = filters.customFilters.split('\n')
     .filter(e => !!e.trim()).map(e => new RegExp(`\\b${e.trim()}\\b`, 'gi'));
   // Filter through them with given criteria
@@ -409,7 +409,7 @@ async function userLogout() {
   console.log(`Logging out user: ${userAccount}`);
   await setupTwitterBrowser();
   const lPage = await tBrowser.newPage();
-  await lPage.goto('https://www.x.com', { waitUntil: 'load' });
+  await lPage.goto('https://www.x.com', { waitUntil: 'load' }).catch(console.error);
   await lPage.locator(accountMenuSel).setTimeout(5000).wait();
   let btn = await lPage.locator(accountMenuSel).waitHandle();
   await btn.evaluate(h => h.click());
@@ -431,13 +431,17 @@ async function userLogout() {
 }
 
 async function init() {
+  hideConsole();
   filters = await loadSettings();
   await setupUtils();
   await db.openDB();
   await setupBrowser();
-  await checkLogin(true);
   await openSettings();
-  console.log('Program loaded!');
+  checkLogin(true).then(() => {
+    page?.evaluate(() => {
+      window?.loadSettings();
+    });
+  });
 }
 
 await init();

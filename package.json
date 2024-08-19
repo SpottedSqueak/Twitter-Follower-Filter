@@ -9,7 +9,8 @@
     "lint": "eslint *.js",
     "lint:fix": "eslint js --fix",
     "lint:init": "eslint --init",
-    "build": "npm ci && npx package"
+    "build": "npm ci & npx package",
+    "build:test": "node test-build.js && cd ./test && npm ci && npx package"
   },
   "author": "SpottedSqueak",
   "license": "MIT",
@@ -28,5 +29,8 @@
     "puppeteer-core": "^22.14.0",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
+  },
+  "optionalDependencies": {
+    "node-hide-console-window": "^2.2.0"
   }
 }

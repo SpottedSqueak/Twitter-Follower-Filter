@@ -1,10 +1,10 @@
 let filters = {};
 let followers = [];
 let container = null;
+let consoleDiv = null;
 // Pagination
 const pageSize = 100;
 let pageNum = 0;
-let consoleDiv = null;
 
 async function init() {
   await loadSettings();
@@ -13,6 +13,11 @@ async function init() {
   setInterval(() => {
     window['get-version']().then(setVersion);
   }, 60 * 60 * 1000);
+  // Warn user about closing browser
+  window.onbeforeunload = (e) => {
+    e.preventDefault();
+    return 'CloseWarning';
+  };
   // Setup console
   consoleDiv = document.querySelector('.console');
   // Setup click events
@@ -41,10 +46,6 @@ async function init() {
     const countTimer = setInterval(() => {
       setFollowerCount();
     }, 10000);
-    window.onbeforeunload = (e) => {
-      e.preventDefault();
-      return 'showdialogplease';
-    };
     document.querySelector('#stop-query').disabled = false;
     // Gather followers
     window['gather-followers']()
@@ -52,7 +53,6 @@ async function init() {
       clearInterval(countTimer);
       queryBtn.disabled = false;
       setFollowerCount();
-      window.onbeforeunload = null;
       document.querySelector('#stop-query').disabled = true;
     });
   });

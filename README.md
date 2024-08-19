@@ -44,8 +44,10 @@ Start it up, login, enter in/choose your filters, and click `Filter Followers` t
 - [x] Remove entries from database when removed from followers
 - [x] Replace "waitForSelector" with "locator"
 - [x] Version checking
+- [x] Hide console (on Windows only)
 
 ## #TODO
+- [ ] Filter by list of formerly logged in accounts
 - [ ] "New Followers Only" scraping method
 
 ## Known Issues

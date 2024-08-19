@@ -3,6 +3,7 @@ import { open } from 'sqlite';
 import { ensureFile } from 'fs-extra/esm';
 import path from 'node:path';
 import { userAccount } from '../index.js';
+import process from 'node:process';
 /**@import { Database } from 'sqlite' */
 
 sqlite3.verbose();
