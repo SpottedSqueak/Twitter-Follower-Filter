@@ -255,7 +255,9 @@ async function queryTwitter(path = 'followers') {
           await twitterPage.evaluate(() => {
             const div = document.querySelector('html');
             div.scrollTo({ top: div.scrollTop - 500, behavior: 'smooth' });
-            div.scrollTo({ top: div.scrollTop + 1000, behavior: 'smooth' });
+            setTimeout(() => {
+              div.scrollTo({ top: div.scrollTop + 1000, behavior: 'smooth' });
+            }, 500);
           });
         }
         retryCount++;
