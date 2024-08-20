@@ -80,7 +80,9 @@ async function setupLogging() {
   }
 
   async function saveToLog(string, encoding) {
-    logStream.write(`[${new Date().toISOString()}] ${string}`, encoding);
+    const newStr = typeof string ===  String ? string.replace(/(home\/.+?\/)/gi, '.../.../') : string;
+    let d = new Date();
+    logStream.write(`[${d.toISOString().split('T')[0]} ${d.toLocaleTimeString()}] ${newStr}`, encoding);
     if (page?.isClosed()) return;
     await page?.evaluate((text) => {
       if (window?.addToConsole) window.addToConsole(text);

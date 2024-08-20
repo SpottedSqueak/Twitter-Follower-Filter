@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer-core';
+import puppeteer, { Locator } from 'puppeteer-core';
 import { getChromiumPath, getFirefoxPath } from 'browser-paths';
 import open from 'open';
 /**@import { Browser, Page, ElementHandle } from 'puppeteer-core' */
@@ -174,8 +174,7 @@ async function getDataFromElement(handle) {
 }
 
 async function setUsername(profileLink) {
-  profileURL = await profileLink.evaluate(el => el.href);
-  userAccount = profileURL.split('/').pop().toLowerCase();
+  userAccount = profileLink.split('/').pop().toLowerCase();
   console.log(`Logged in as: ${userAccount}`);
 }
 
@@ -186,7 +185,7 @@ async function forceLogin() {
   const loginPage = (await tBrowser.pages())[0];
   await loginPage.goto('https://www.x.com', { ...loadOpts, timeout: 0, signal }).catch(console.error);
   if (!tBrowser?.connected) return false;
-  const profileLink = await loginPage.locator(profileSel).setTimeout(0).waitHandle({ signal })
+  const profileLink = await loginPage.locator(profileSel).setTimeout(0).map(el => el.href).wait({ signal })
     .catch(() => {
       console.log('Canceling login...');
       return false;
@@ -196,21 +195,28 @@ async function forceLogin() {
 }
 async function checkLogin(skipForceLogin = false) {
   userAccount = '';
-  await setupTwitterBrowser();
+  const signal = await setupTwitterBrowser();
   //Log in to Twitter
   let loginPage = await tBrowser.newPage();
   console.log('Checking login...');
-  await loginPage.goto('https://www.x.com', loadOpts).catch(console.error);
+  await loginPage.goto('https://www.x.com', { ...loadOpts, timeout: 0, signal })
+    .catch(console.error);
+  if (!tBrowser?.connected || loginPage?.isClosed()) return false;
   // Check for login...
-  let profileLink = await loginPage.locator(profileSel).waitHandle()
-    .catch(() => console.log('Not logged in!'));
+  let profileLink = await Locator.race([
+    loginPage.locator(profileSel),
+    loginPage.locator(`a[href="/login"]`)
+  ]).map(el => {
+    if (el.dataset.testid === 'loginButton') return false;
+    return el.href;
+  }).wait();
   if (!skipForceLogin && !profileLink) profileLink = await forceLogin();
   if (!profileLink) {
+    console.log('Not logged in!');
     await tBrowser?.close();
     return false;
   }
   if (!userAccount) await setUsername(profileLink);
-  await profileLink.dispose();
   // Close login page
   await tBrowser?.close();
   return true;
@@ -294,7 +300,7 @@ async function queryTwitter(path = 'followers') {
     await twitterPage.locator(followerContainerSel).setWaitForStableBoundingBox().wait();
     // Wait for page to refresh by checking that first div is gone
     // await followerContainer.waitForSelector(`${fSelector} a[href*="${followersToAdd[0].url}"]`, { timeout: 5000, hidden: true })
-    console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
+    // console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
     await twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('visible').wait()
     .catch(() => console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.'));
     if (!isRunning) break followerLoop;
@@ -305,7 +311,9 @@ async function queryTwitter(path = 'followers') {
     newMinHeight = await heightDiv.evaluate(el => Number(el.style.minHeight.replace('px', '')));
     await sleep(5000 + getRandom(1000));
   } while (isRunning);
-  await followerContainer.dispose();
+  // Clean up references
+  await followerContainer?.dispose();
+  await heightDiv?.dispose();
   if (!isRunning) return Promise.reject('User exited');
   else tBrowser.off('disconnected');
   return Promise.resolve();
@@ -447,7 +455,8 @@ async function init() {
   await db.openDB();
   await setupBrowser();
   await openSettings();
-  checkLogin(true).then(() => {
+  checkLogin(true).then((e) => {
+    if (!e) return;
     page?.evaluate(() => {
       window?.loadSettings();
     });
