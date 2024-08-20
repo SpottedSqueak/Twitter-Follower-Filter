@@ -199,7 +199,7 @@ async function checkLogin(skipForceLogin = false) {
   //Log in to Twitter
   let loginPage = await tBrowser.newPage();
   console.log('Checking login...');
-  await loginPage.goto('https://www.x.com', { ...loadOpts, timeout: 0, signal })
+  await loginPage.goto('https://www.x.com', { ...loadOpts, signal })
     .catch(console.error);
   if (!tBrowser?.connected || loginPage?.isClosed()) return false;
   // Check for login...
