@@ -17,7 +17,6 @@ const cssPath = path.resolve(__dirname, './content/css/userChrome.css');
 const browserChoice = path.resolve(__dirname, './browser.json');
 const loadOpts = {
   waitUntil: 'load',
-  timeout: 3000,
 };
 // Selectors
 const followerContainerSel = '[aria-label$=" Followers"]';
@@ -198,7 +197,7 @@ async function checkLogin(skipForceLogin = false) {
   console.log('Checking login...');
   await loginPage.goto('https://www.x.com').catch(console.error);
   // Check for login...
-  let profileLink = await loginPage.locator(profileSel).setTimeout(2000).waitHandle()
+  let profileLink = await loginPage.locator(profileSel).waitHandle()
     .catch(() => console.log('Not logged in!'));
   if (!skipForceLogin && !profileLink) profileLink = await forceLogin();
   if (!profileLink) {
@@ -290,7 +289,7 @@ async function queryTwitter(path = 'followers') {
     // Wait for page to refresh by checking that first div is gone
     // await followerContainer.waitForSelector(`${fSelector} a[href*="${followersToAdd[0].url}"]`, { timeout: 5000, hidden: true })
     console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
-    await twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setTimeout(5000).setVisibility('visible').wait()
+    await twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('visible').wait()
     .catch(() => console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.'));
     if (!isRunning) break followerLoop;
     // Check if rate limited
@@ -413,11 +412,11 @@ async function userLogout() {
   await setupTwitterBrowser();
   const lPage = await tBrowser.newPage();
   await lPage.goto('https://www.x.com', { waitUntil: 'load' }).catch(console.error);
-  await lPage.locator(accountMenuSel).setTimeout(5000).wait();
+  await lPage.locator(accountMenuSel).wait();
   let btn = await lPage.locator(accountMenuSel).waitHandle();
   await btn.evaluate(h => h.click());
   await btn.dispose();
-  let redirect = lPage.locator(profileSel).setTimeout(1000).setVisibility('visible').wait();
+  let redirect = lPage.locator(profileSel).setVisibility('visible').wait();
   btn = await lPage.locator('a[href*="logout"]').waitHandle();
   await btn.evaluate(h => h.click());
   await btn.dispose();
