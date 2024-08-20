@@ -28,7 +28,7 @@ let browserSettings = {};
 let tBrowserSettings = {};
 let filters = null;
 let isRunning = false;
-let isLogout = false;
+let isAccountAction = false;
 let profileURL = '';
 
 /**@type Browser */
@@ -112,12 +112,18 @@ async function setupBrowser() {
   page = (await browser.pages())[0] || await browser.newPage();
 }
 
-async function setupTwitterBrowser(headless = true, userDataDir = tBrowserSettings.userDataDir) {
+async function setupTwitterBrowser(headless = true, userDataDir = tBrowserSettings.userDataDir, tries = 0) {
+  tBrowser?.off('disconnected');
   await tBrowser?.close();
-  tBrowser = await puppeteer.launch({ ...tBrowserSettings, ...{ headless, userDataDir } }).catch(() => {
-    return setupTwitterBrowser(headless, userDataDir);
-  }).catch(console.error);
+  tBrowser = await puppeteer.launch({ ...tBrowserSettings, ...{ headless, userDataDir } }).catch((e) => {
+    console.log(e);
+    if (tries < 2)
+      return setupTwitterBrowser(headless, userDataDir, tries++);
+  });
   if (!tBrowser?.connected) return Promise.reject('Browser setup failed!');
+  const aController = new AbortController();
+  tBrowser.once('disconnected', () => aController.abort());
+  return aController.signal;
 }
 
 // Open settings page
@@ -176,12 +182,11 @@ async function setUsername(profileLink) {
 async function forceLogin() {
   // Not logged in, show window
   console.log('Asking user to log in...');
-  await setupTwitterBrowser(false);
+  const signal = await setupTwitterBrowser(false);
   const loginPage = (await tBrowser.pages())[0];
-  await loginPage.goto('https://www.x.com', loadOpts).catch(console.error);
-  const aController = new AbortController();
-  tBrowser.once('disconnected', () => aController.abort());
-  const profileLink = await loginPage.locator(profileSel).setTimeout(0).waitHandle({ signal: aController.signal })
+  await loginPage.goto('https://www.x.com', { ...loadOpts, timeout: 0, signal }).catch(console.error);
+  if (!tBrowser?.connected) return false;
+  const profileLink = await loginPage.locator(profileSel).setTimeout(0).waitHandle({ signal })
     .catch(() => {
       console.log('Canceling login...');
       return false;
@@ -195,7 +200,7 @@ async function checkLogin(skipForceLogin = false) {
   //Log in to Twitter
   let loginPage = await tBrowser.newPage();
   console.log('Checking login...');
-  await loginPage.goto('https://www.x.com').catch(console.error);
+  await loginPage.goto('https://www.x.com', loadOpts).catch(console.error);
   // Check for login...
   let profileLink = await loginPage.locator(profileSel).waitHandle()
     .catch(() => console.log('Not logged in!'));
@@ -214,12 +219,13 @@ async function checkLogin(skipForceLogin = false) {
 async function queryTwitter(path = 'followers') {
   // Open headless browser to scrape followers
   isRunning = true;
-  await setupTwitterBrowser();
+  const signal = await setupTwitterBrowser();
   const twitterPage = await tBrowser.newPage();
   const followerUrl = `${profileURL}/${path}`;
   // Go to the follower page
-  await twitterPage.goto(followerUrl, loadOpts).catch(() => console.log('Page loaded??'));
-  if (!twitterPage) return Promise.reject('Couldn\'t load page');
+  console.log(`Loading follower page for: ${userAccount}`);
+  await twitterPage.goto(followerUrl, { ...loadOpts, signal, timeout: 5 * 60 * 1000}).catch(() => console.log('Page loaded??'));
+  if (!tBrowser.connected || !twitterPage) return Promise.reject('Couldn\'t load page');
   console.log(`Loading ${path} list!`);
   await sleep(5000);
   if (!isRunning) return Promise.reject('User canceled');
@@ -337,7 +343,7 @@ async function removeFollower(url, isBlock = false) {
   const block = 'div[data-testid="block"]';
   const fPage = await tBrowser.newPage();
   // Load page
-  await fPage.goto(url).catch(console.error);
+  await fPage.goto(url, loadOpts).catch(console.error);
   // Click menu
   await fPage.locator('button[data-testid="userActions"]').wait().click();
   // Click unfollow/block
@@ -358,8 +364,7 @@ async function stopQuery() {
 async function gatherFollowers() {
   if (isRunning) return false;
   if (!profileURL) return console.log('Please login first!');
-  await queryTwitter('verified_followers')
-    .then(queryTwitter)
+  await queryTwitter()
     .then(() => console.log('Follower collection complete!'))
     .catch(e => {
       if (e) console.log(e);
@@ -401,17 +406,20 @@ async function loadFollowers() {
 }
 
 async function userLogin() {
+  if (isAccountAction) return;
+  isAccountAction = true;
   await forceLogin();
+  isAccountAction = false;
   await tBrowser?.close();
 }
 
 async function userLogout() {
-  if (isLogout) return;
-  isLogout = true;
+  if (isAccountAction) return;
+  isAccountAction = true;
   console.log(`Logging out user: ${userAccount}`);
   await setupTwitterBrowser();
   const lPage = await tBrowser.newPage();
-  await lPage.goto('https://www.x.com', { waitUntil: 'load' }).catch(console.error);
+  await lPage.goto('https://www.x.com', loadOpts).catch(console.error);
   await lPage.locator(accountMenuSel).wait();
   let btn = await lPage.locator(accountMenuSel).waitHandle();
   await btn.evaluate(h => h.click());
@@ -428,7 +436,7 @@ async function userLogout() {
   await tBrowser?.close();
   userAccount = '';
   await page.reload();
-  isLogout = false;
+  isAccountAction = false;
   console.log(`User logged out!`);
 }
 
