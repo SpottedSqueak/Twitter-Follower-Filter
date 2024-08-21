@@ -54,6 +54,12 @@ Start it up, login, enter in/choose your filters, and click `Filter Followers` t
 
 -- See the issues tab above!
 
+- Q: Why does the program crash on startup sometimes?
+  A: No idea! Something to do with how Puppeteer initializes the browser sometimes fails. Restarting usually fixes that though.
+
+- Q: The login check failed! What happened?
+  A: See above! Puppeteer fails sometimes; it just needs a retry.
+
 Check out my stuff on FA if you'd like!
 
 **SFW:** https://www.furaffinity.net/user/forest-wolf

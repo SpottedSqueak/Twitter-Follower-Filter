@@ -8,7 +8,6 @@ let pageNum = 0;
 
 async function init() {
   await loadSettings();
-  setFollowerCount();
   // Check for a new version every hour
   setInterval(() => {
     window['get-version']().then(setVersion);
@@ -148,6 +147,7 @@ async function loadSettings() {
   }
   window['get-version']().then(setVersion);
   setUserAccount();
+  reset();
 }
 
 function setVersion({ current, latest }) {

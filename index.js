@@ -14,7 +14,6 @@ const userPath = path.resolve(__dirname, './data/user-data');
 const defaultPath = path.resolve(__dirname, './data/default');
 const userSettings = path.resolve(__dirname, './data/user-settings.json');
 const cssPath = path.resolve(__dirname, './content/css/userChrome.css');
-const icoPath = path.resolve(__dirname, './content/html/resources/favicon.ico');
 const browserChoice = path.resolve(__dirname, './browser.json');
 const loadOpts = {
   waitUntil: 'load',
@@ -24,6 +23,7 @@ const followerContainerSel = '[aria-label$=" Followers"]';
 const profileSel = 'a[aria-label="Profile"]';
 const fSelector = 'button[data-testid="UserCell"]';
 const accountMenuSel = 'button[aria-label="Account menu"]';
+const loginSel = 'a[href="/login"]';
 
 let browserSettings = {};
 let tBrowserSettings = {};
@@ -208,7 +208,7 @@ async function checkLogin(skipForceLogin = false) {
   // Check for login...
   let profileLink = await Locator.race([
     loginPage.locator(profileSel),
-    loginPage.locator(`a[href="/login"]`)
+    loginPage.locator(loginSel)
   ]).map(el => {
     if (el.dataset.testid === 'loginButton') return false;
     return el.href;
@@ -302,7 +302,6 @@ async function queryTwitter(path = 'followers') {
     await currFollowers.pop().evaluateHandle((e) => e.scrollIntoView({ behavior: 'smooth', block: 'end' }));
     await twitterPage.locator(followerContainerSel).setWaitForStableBoundingBox().wait();
     // Wait for page to refresh by checking that first div is gone
-    // await followerContainer.waitForSelector(`${fSelector} a[href*="${followersToAdd[0].url}"]`, { timeout: 5000, hidden: true })
     // console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
     await twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('visible').wait()
     .catch(() => console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.'));
@@ -419,7 +418,7 @@ async function loadFollowers() {
 async function userLogin() {
   if (isAccountAction) return;
   isAccountAction = true;
-  await forceLogin();
+  await checkLogin();
   isAccountAction = false;
   await tBrowser?.close();
 }
@@ -428,14 +427,19 @@ async function userLogout() {
   if (isAccountAction) return;
   isAccountAction = true;
   console.log(`Logging out user: ${userAccount}`);
-  await setupTwitterBrowser();
+  const signal = await setupTwitterBrowser();
   const lPage = await tBrowser.newPage();
-  await lPage.goto('https://www.x.com', loadOpts).catch(console.error);
+  await lPage.goto('https://www.x.com', { ...loadOpts, setTimeout: 5 * 60 * 1000, signal })
+    .catch(console.error);
+  if (!tBrowser?.connected || lPage?.isClosed()) {
+    isAccountAction = false;
+    return console.log('Login canceled!');
+  }
   await lPage.locator(accountMenuSel).wait();
   let btn = await lPage.locator(accountMenuSel).waitHandle();
   await btn.evaluate(h => h.click());
   await btn.dispose();
-  let redirect = lPage.locator(profileSel).setVisibility('visible').wait();
+  let redirect = lPage.locator(loginSel).setTimeout(0).wait({ signal });
   btn = await lPage.locator('a[href*="logout"]').waitHandle();
   await btn.evaluate(h => h.click());
   await btn.dispose();
@@ -443,12 +447,16 @@ async function userLogout() {
   await btn.evaluate(h => h.click());
   await btn.dispose();
   await redirect.catch(console.error);
-  await sleep(1000);
   await tBrowser?.close();
   userAccount = '';
-  await page.reload();
+  resetSettingsPage();
   isAccountAction = false;
   console.log(`User logged out!`);
+}
+async function resetSettingsPage() {
+  return page?.evaluate(() => {
+    window?.loadSettings();
+  });
 }
 
 async function init() {
@@ -460,9 +468,7 @@ async function init() {
   await openSettings();
   checkLogin(true).then((e) => {
     if (!e) return;
-    page?.evaluate(() => {
-      window?.loadSettings();
-    });
+    resetSettingsPage();
   });
 }
 
