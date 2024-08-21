@@ -14,6 +14,7 @@ const userPath = path.resolve(__dirname, './data/user-data');
 const defaultPath = path.resolve(__dirname, './data/default');
 const userSettings = path.resolve(__dirname, './data/user-settings.json');
 const cssPath = path.resolve(__dirname, './content/css/userChrome.css');
+const icoPath = path.resolve(__dirname, './content/html/resources/favicon.ico');
 const browserChoice = path.resolve(__dirname, './browser.json');
 const loadOpts = {
   waitUntil: 'load',
@@ -92,6 +93,8 @@ async function setupBrowser() {
     },
     extraPrefsFirefox: {
       'toolkit.legacyUserProfileCustomizations.stylesheets': true,
+      'toolkit.legacyUserProfileCustomizations.windowIcon': true,
+      'browser.tabs.inTitlebar': 0,
     },
     args: DEFAULT_BROWSER_PARAMS,
     ignoreDefaultArgs: IGNORE_DEFAULT_PARAMS,
@@ -200,7 +203,7 @@ async function checkLogin(skipForceLogin = false) {
   let loginPage = await tBrowser.newPage();
   console.log('Checking login...');
   await loginPage.goto('https://www.x.com', { ...loadOpts, signal })
-    .catch(console.error);
+    .catch(() => {});
   if (!tBrowser?.connected || loginPage?.isClosed()) return false;
   // Check for login...
   let profileLink = await Locator.race([
@@ -450,8 +453,8 @@ async function userLogout() {
 
 async function init() {
   hideConsole();
-  filters = await loadSettings();
   await setupUtils();
+  filters = await loadSettings();
   await db.openDB();
   await setupBrowser();
   await openSettings();

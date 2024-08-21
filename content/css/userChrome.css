@@ -1,3 +1,5 @@
 #nav-bar {
   visibility: collapse !important;
 }
+
+#TabsToolbar-customization-target { visibility: collapse !important; }
