@@ -19,7 +19,7 @@ const loadOpts = {
   waitUntil: 'load',
 };
 // Selectors
-const followerContainerSel = 'h1#accessible-list-6 + div';
+const followerContainerSel = 'h1[id*="accessible-list"] + div';
 const profileSel = 'a[data-testid="AppTabBar_Profile_Link"]';
 const fSelector = 'button[data-testid="UserCell"]';
 const accountMenuSel = 'button[data-testid="SideNav_AccountSwitcher_Button"]';
