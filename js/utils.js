@@ -5,7 +5,7 @@ import process from 'node:process';
 import { getColumnNames, getEntries } from './database.js';
 import { stringify } from 'csv-stringify';
 import * as cheerio from 'cheerio';
-import { page, userAccount } from '../index.js';
+import { closeAll, page, userAccount } from '../index.js';
 import pkg from './pkg.cjs';
 /**@import { WriteStream } from 'node:fs' */
 
@@ -129,12 +129,14 @@ export function hideConsole() {
 export async function setupUtils() {
   await setupLogging();
   // Handle process exceptions
-  process.on('uncaughtException', (e) => {
+  process.on('uncaughtException', async (e) => {
     console.error(e);
+    await closeAll();
     process.exit(2);
   })
-  .on('unhandledRejection', (e) => {
+  .on('unhandledRejection', async (e) => {
     console.error(e);
+    await closeAll();
     process.exit(3);
   });
 }

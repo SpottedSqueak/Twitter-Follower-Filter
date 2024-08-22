@@ -38,8 +38,14 @@ let browser = null;
 let tBrowser = null;
 /** @type Page */
 export let page = null;
-
 export let userAccount = '';
+export async function closeAll() {
+  console.log('Closing everything...');
+  await db.close();
+  await closeLogs();
+  await tBrowser?.close();
+}
+
 let followers = [];
 
 async function saveSettings(newSettings) {
@@ -109,12 +115,7 @@ async function setupBrowser() {
   // Setup Twitter browser settings
   tBrowserSettings = { ...browserSettings, ...{ headless: true, userDataDir: userPath } };
   // Setup disconnect for browser closing
-  browser.on('disconnected', async () => {
-    console.log('Closing everything...');
-    await db.close();
-    await closeLogs();
-    await tBrowser?.close();
-  });
+  browser.on('disconnected', closeAll);
 
   page = (await browser.pages())[0] || await browser.newPage();
 }
@@ -210,7 +211,7 @@ async function checkLogin(skipForceLogin = false) {
   console.log('Checking login...');
   await loginPage.goto('https://www.x.com', { ...loadOpts, signal })
     .catch(() => {});
-  if (!tBrowser?.connected || loginPage?.isClosed()) return false;
+  if (!tBrowser?.connected) return false;
   // Check for login...
   let profileLink = await Locator.race([
     loginPage.locator(profileSel),
@@ -264,6 +265,7 @@ async function queryTwitter(path = 'followers') {
   // let prevFollowers = [];
   followerLoop: do {
     if (!isRunning) break followerLoop;
+    if (!tBrowser.connected) break followerLoop;
     newMinHeight = await heightDiv.evaluate(el => Number(el.style.minHeight.replace('px', '')));
     // Check minheight change, which shows that the page has loaded new followers
     if (newMinHeight && minHeight !== newMinHeight) minHeight = newMinHeight;
@@ -272,6 +274,7 @@ async function queryTwitter(path = 'followers') {
       console.log('Height not matching! Retrying...');
       if (retryCount < 3) {
         if (retryCount > 1) {
+          if (!tBrowser.connected) break followerLoop;
           await twitterPage.evaluate(() => {
             const div = document.querySelector('html');
             div.scrollTo({ top: div.scrollTop - 500, behavior: 'smooth' });
@@ -301,16 +304,19 @@ async function queryTwitter(path = 'followers') {
       }
     }
     // Check for repeat entries, exit if set to only update
-    // #TODO
     db.addEntries(followersToAdd);
     // Scroll down past last element
     if (!isRunning) break followerLoop;
-    await currFollowers.pop().evaluateHandle((e) => e.scrollIntoView({ behavior: 'smooth', block: 'end' }));
+    const scrollWait = twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('hidden').wait()
+      .catch(() => {
+        console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.');
+      });
+    currFollowers.push(await currFollowers.pop().evaluateHandle((e) => e.scrollIntoView({ behavior: 'smooth', block: 'end' })));
+    currFollowers.forEach(el => el.dispose());
     await twitterPage.locator(followerContainerSel).setWaitForStableBoundingBox().wait();
     // Wait for page to refresh by checking that first div is gone
-    // console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
-    await twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('visible').wait()
-    .catch(() => console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.'));
+    console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
+    await scrollWait;
     if (!isRunning) break followerLoop;
     // Check if rate limited
     await rateLimitedCheck(followerContainer);
@@ -335,7 +341,7 @@ async function rateLimitedCheck(followerContainer) {
   let limited = null;
   let count = 0;
   do {
-    if (!isRunning || count > 9) break;
+    if (!tBrowser?.connected || !isRunning || count > 9) break;
     limited = await followerContainer.$('button ::-p-text(Retry)').catch((e) => console.error(e));
     count++;
     // If retry button, wait before clicking
@@ -437,7 +443,7 @@ async function userLogout() {
   const lPage = await tBrowser.newPage();
   await lPage.goto('https://www.x.com', { ...loadOpts, setTimeout: 5 * 60 * 1000, signal })
     .catch(console.error);
-  if (!tBrowser?.connected || lPage?.isClosed()) {
+  if (!tBrowser?.connected) {
     isAccountAction = false;
     return console.log('Login canceled!');
   }
