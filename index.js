@@ -19,10 +19,10 @@ const loadOpts = {
   waitUntil: 'load',
 };
 // Selectors
-const followerContainerSel = '[aria-label$=" Followers"]';
-const profileSel = 'a[aria-label="Profile"]';
+const followerContainerSel = 'h1#accessible-list-6 + div';
+const profileSel = 'a[data-testid="AppTabBar_Profile_Link"]';
 const fSelector = 'button[data-testid="UserCell"]';
-const accountMenuSel = 'button[aria-label="Account menu"]';
+const accountMenuSel = 'button[data-testid="SideNav_AccountSwitcher_Button"]';
 const loginSel = 'a[href="/login"]';
 
 let browserSettings = {};
@@ -50,10 +50,13 @@ async function saveSettings(newSettings) {
 }
 
 async function loadSettings() {
-  return fs.readJson(userSettings).then(d => {
-    d.userAccount = userAccount;
-    return d;
-  }).catch(() => ({}));
+  return fs.readJson(userSettings)
+  .then(d => {
+    return { ...d, userAccount };
+  })
+  .catch(() => {
+    return { userAccount };
+  });
 }
 
 async function getbrowserInfo() {
@@ -77,6 +80,7 @@ async function getbrowserInfo() {
 // Setup browser
 async function setupBrowser() {
   const browserInfo = await getbrowserInfo();
+  console.log(`Path to browser: ${browserInfo.executablePath}`);
   // Make sure the User profiles exist
   await fs.ensureDir(userPath);
   await fs.ensureDir(defaultPath);
@@ -177,6 +181,7 @@ async function getDataFromElement(handle) {
 }
 
 async function setUsername(profileLink) {
+  profileURL = profileLink;
   userAccount = profileLink.split('/').pop().toLowerCase();
   console.log(`Logged in as: ${userAccount}`);
 }
@@ -196,6 +201,7 @@ async function forceLogin() {
   if (profileLink) await setUsername(profileLink);
   return profileLink;
 }
+
 async function checkLogin(skipForceLogin = false) {
   userAccount = '';
   const signal = await setupTwitterBrowser();
