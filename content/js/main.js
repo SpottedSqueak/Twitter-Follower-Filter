@@ -108,6 +108,11 @@ async function init() {
       reset();
     });
   });
+  document.querySelector('#releases-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    window['open-url'](e.target.href);
+  });
   reset();
 }
 

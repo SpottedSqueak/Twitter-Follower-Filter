@@ -35,6 +35,10 @@ You'll need [@radically-straightforward/package](https://github.com/radically-st
 
 Start it up, login, enter in/choose your filters, and click `Filter Followers` to have it get to work.
 
+## CSV Saving
+
+You can save the entire database for a user account to a CSV file with the click of a button! It's saved in the program folder.
+
 ## #DONE
 - [x] Initial functionality (query followers, filter followers, add own filters, etc.)
 - [x] Login/Logout option

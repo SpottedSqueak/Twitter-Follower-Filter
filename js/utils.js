@@ -39,12 +39,12 @@ export async function closeLogs() {
 export async function writeFollowersToCSV() {
   if (!userAccount) return console.log('Please login first!');
   const date = new Date();
-  const filePath = path.join(logPath, `${date.toJSON().slice(0,10)}_${date.getHours()}-00.csv`);
+  const filePath = path.resolve(__dirname, `../${userAccount}_Followers_${date.toJSON().slice(0,10)}_${date.getHours()}-00.csv`);
   // Get all column names, set up stringifier
   const columns = await getColumnNames() || [];
   // Set up writing to file
-  const followers = (await getEntries())?.map(e => Object.values(e).slice(1));
-  await new Promise((resolve, reject) => {
+  const followers = (await getEntries())?.map(e => Object.values(e).slice(1, -2));
+  await new Promise((res, reject) => {
     console.log(`Writing ${followers.length} followers to file!`);
     stringify(followers,
       { header: true, columns: columns?.slice(1) },
@@ -52,12 +52,14 @@ export async function writeFollowersToCSV() {
         if (err) {
           reject(err);
         } else {
-          fse.writeFile(filePath, output);
-          resolve();
+          fse.writeFile(filePath, output).finally(() => {
+            res();
+          });
         }
-      }).catch(console.error);
-  });
-  console.log('Write complete!');
+      });
+  })
+  .then(() => console.log('Write complete!'))
+  .catch(console.error);
 }
 
 async function setupLogging() {

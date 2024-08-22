@@ -315,7 +315,7 @@ async function queryTwitter(path = 'followers') {
     currFollowers.forEach(el => el.dispose());
     await twitterPage.locator(followerContainerSel).setWaitForStableBoundingBox().wait();
     // Wait for page to refresh by checking that first div is gone
-    console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
+    // console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
     await scrollWait;
     if (!isRunning) break followerLoop;
     // Check if rate limited
