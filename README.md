@@ -18,7 +18,7 @@ Database is `sqlite` and can be read with something like [DB Browser](https://sq
 
 ## Info
 
-Boot it up and click `Query Followers` to get a Twitter login page. This is done via the browser so all the standard login methods apply (such as Two-Factor Auth). Once logged in the Twitter page closes and starts retrieving the follower list in the background, updating the database count every 10 seconds.
+Boot it up and click `login` to get a Twitter login page. This is done via the browser so all the standard login methods apply (such as Two-Factor Auth). Once logged in the Twitter page closes and starts retrieving the follower list in the background, updating the database count every 10 seconds.
 
 For my Twitter follower list, at around 11k people, it takes about an hour. Sorry!
 
