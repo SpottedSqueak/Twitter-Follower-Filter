@@ -108,7 +108,7 @@ export async function getVersion() {
   versionHTML = await fetch('https://github.com/SpottedSqueak/Twitter-Follower-Filter/releases')
     .catch(() => false);
   if (versionHTML) {
-    const $ = cheerio.load(versionHTML);
+    const $ = cheerio.load(await versionHTML.text());
     const latest = $('a.Link--primary').first()?.text()?.replace('v', '');
     if (latest) data.latest = latest;
     versionHTML = '';
