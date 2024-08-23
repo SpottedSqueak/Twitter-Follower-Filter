@@ -415,7 +415,7 @@ async function scrapeFollowerCount({ signal } = {}) {
   const tooltipSel = 'div[role="tooltip"]';
   const hoverSel = 'a[href$="verified_followers"]';
   await twitterPage.locator(hoverSel).wait();
-  await sleep(1000);
+  await sleep(500);
   await twitterPage.locator(hoverSel).hover();
   const count = await twitterPage.locator(tooltipSel).map(el => el.textContent).wait();
   totalFollowerCount = Number(count.replace(',', '')) || 0;
@@ -512,6 +512,7 @@ async function userLogout() {
   isAccountAction = false;
   console.log(`User logged out!`);
 }
+
 async function resetSettingsPage() {
   return page?.evaluate(() => {
     window?.loadSettings();
@@ -525,13 +526,14 @@ async function init() {
   await db.openDB();
   await setupBrowser();
   await openSettings();
+  isAccountAction = true;
   isRunning = true;
-  checkLogin(true).then((e) => {
-    if (!e) return;
-  }).finally(() => {
-    isRunning = false;
-    return resetSettingsPage();
-  });
+  checkLogin(true)
+    .finally(() => {
+      isAccountAction = false;
+      isRunning = false;
+      return resetSettingsPage();
+    });
 }
 
 await init();
