@@ -21,7 +21,7 @@
     "globals": "^15.8.0"
   },
   "dependencies": {
-    "browser-paths": "^1.1.5",
+    "browser-paths": "^1.1.6",
     "cheerio": "^1.0.0",
     "csv-stringify": "^6.5.1",
     "fs-extra": "^11.2.0",
