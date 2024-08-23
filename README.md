@@ -12,7 +12,7 @@ Install: `npm i`
 
 Run: `npm run start`
 
-Build: `npm run build`
+Test Build: `npm run build:test`
 
 Database is `sqlite` and can be read with something like [DB Browser](https://sqlitebrowser.org/)
 
