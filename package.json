@@ -1,6 +1,6 @@
 {
   "name": "twitter-follower-filter",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Filter and search your Twitter followers based on criteria you provide.",
   "main": "index.js",
   "type": "module",
