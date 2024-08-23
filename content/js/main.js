@@ -118,7 +118,10 @@ async function init() {
 
 async function setFollowerCount() {
   const followerCount = await window['get-follower-count']();
-  document.querySelector('#follower-count').innerHTML = followerCount;
+  const fCount = followerCount  ? followerCount.toLocaleString() : 0;
+  const tCount = filters.totalFollowerCount ? filters.totalFollowerCount?.toLocaleString() : '???'
+  document.querySelector('#follower-count').innerHTML = fCount;
+  document.querySelector('#total-follower-count').innerHTML = tCount;
   document.querySelector('#filter').disabled = followerCount < 1;
 }
 
@@ -213,9 +216,10 @@ function setQueryButtons() {
   document.querySelectorAll('.previous').forEach(e => e.disabled = previous);
   document.querySelectorAll('.next').forEach(e => e.disabled = next);
   const querySize = document.querySelector('#query-size');
-  querySize.innerHTML = `${followers.length} `;
+  querySize.innerHTML = `${followers.length.toLocaleString()} `;
   if (!followers.length) querySize.style.display = 'none';
   else querySize.style.display = 'inline';
+  document.querySelector('#query').disabled = filters.isRunning === true;
 }
 
 function addToConsole(text) {

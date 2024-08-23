@@ -15,9 +15,7 @@ const defaultPath = path.resolve(__dirname, './data/default');
 const userSettings = path.resolve(__dirname, './data/user-settings.json');
 const cssPath = path.resolve(__dirname, './content/css/userChrome.css');
 const browserChoice = path.resolve(__dirname, './browser.json');
-const loadOpts = {
-  waitUntil: 'load',
-};
+const loadOpts = { waitUntil: 'load' };
 // Selectors
 const followerContainerSel = 'h1[id*="accessible-list"] + div';
 const profileSel = 'a[data-testid="AppTabBar_Profile_Link"]';
@@ -30,7 +28,9 @@ let tBrowserSettings = {};
 let filters = null;
 let isRunning = false;
 let isAccountAction = false;
+// Values provided by login
 let profileURL = '';
+let totalFollowerCount = 0;
 
 /**@type Browser */
 let browser = null;
@@ -58,10 +58,10 @@ async function saveSettings(newSettings) {
 async function loadSettings() {
   return fs.readJson(userSettings)
   .then(d => {
-    return { ...d, userAccount };
+    return { ...d, userAccount, totalFollowerCount, isRunning };
   })
   .catch(() => {
-    return { userAccount };
+    return { userAccount, totalFollowerCount, isRunning };
   });
 }
 
@@ -199,7 +199,10 @@ async function forceLogin() {
       console.log('Canceling login...');
       return false;
     });
-  if (profileLink) await setUsername(profileLink);
+  if (profileLink) {
+    await setUsername(profileLink);
+    await scrapeFollowerCount();
+  }
   return profileLink;
 }
 
@@ -221,22 +224,50 @@ async function checkLogin(skipForceLogin = false) {
     return el.href;
   }).wait();
   if (!skipForceLogin && !profileLink) profileLink = await forceLogin();
+  else if (profileLink) {
+    await setUsername(profileLink);
+    await scrapeFollowerCount({ signal });
+  }
   if (!profileLink) {
     console.log('Not logged in!');
     await tBrowser?.close();
     return false;
   }
-  if (!userAccount) await setUsername(profileLink);
   // Close login page
   await tBrowser?.close();
   return true;
 }
 
-async function queryTwitter(path = 'followers') {
+async function loopRetryLogic(retryCount, twitterPage) {
+  // Height didn't change? Retry 3 times to give it time to change
+  console.log('Height not matching! Retrying...');
+  if (retryCount < 3) {
+    if (retryCount > 1) {
+      if (!tBrowser.connected) return false;
+      await twitterPage.evaluate(() => {
+        const div = document.querySelector('html');
+        div.scrollTo({ top: div.scrollTop - 500, behavior: 'smooth' });
+        setTimeout(() => {
+          div.scrollTo({ top: div.scrollTop + 1000, behavior: 'smooth' });
+        }, 500);
+      });
+    }
+    retryCount++;
+    console.log(`No new data? Retrying in: ${retryCount * 10} seconds`);
+    await sleep(retryCount * 10 * 1000);
+    return true;
+  } else return false;
+}
+
+async function queryTwitter({ path = 'followers', signal }) {
   // Open headless browser to scrape followers
-  isRunning = true;
-  const signal = await setupTwitterBrowser();
-  const twitterPage = await tBrowser.newPage();
+  if (!signal || !tBrowser?.connected) {
+    signal = await setupTwitterBrowser();
+  }
+  const pages = await tBrowser.pages();
+  let twitterPage = await tBrowser.newPage();
+  pages.forEach(p => p.close());
+
   const followerUrl = `${profileURL}/${path}`;
   // Go to the follower page
   console.log(`Loading follower page for: ${userAccount}`);
@@ -264,30 +295,14 @@ async function queryTwitter(path = 'followers') {
   let retryCount = 0;
   // let prevFollowers = [];
   followerLoop: do {
-    if (!isRunning) break followerLoop;
-    if (!tBrowser.connected) break followerLoop;
+    if (!isRunning || !tBrowser?.connected) break followerLoop;
     newMinHeight = await heightDiv.evaluate(el => Number(el.style.minHeight.replace('px', '')));
     // Check minheight change, which shows that the page has loaded new followers
     if (newMinHeight && minHeight !== newMinHeight) minHeight = newMinHeight;
-    // Height didn't change? Retry 3 times to give it time to change
     else {
-      console.log('Height not matching! Retrying...');
-      if (retryCount < 3) {
-        if (retryCount > 1) {
-          if (!tBrowser.connected) break followerLoop;
-          await twitterPage.evaluate(() => {
-            const div = document.querySelector('html');
-            div.scrollTo({ top: div.scrollTop - 500, behavior: 'smooth' });
-            setTimeout(() => {
-              div.scrollTo({ top: div.scrollTop + 1000, behavior: 'smooth' });
-            }, 500);
-          });
-        }
-        retryCount++;
-        console.log(`No new data? Retrying in: ${retryCount * 10} seconds`);
-        await sleep(retryCount * 10 * 1000);
-        continue;
-      } else break followerLoop;
+      const result = await loopRetryLogic(retryCount, twitterPage);
+      if (result) continue;
+      else break followerLoop;
     }
     retryCount = 0;
     // Get all currently visible followers and add to database
@@ -383,16 +398,45 @@ async function stopQuery() {
   await tBrowser?.close();
 }
 
+async function scrapeFollowerCount({ signal } = {}) {
+  if (!signal || !tBrowser?.connected) {
+    signal = await setupTwitterBrowser();
+  }
+  if(!tBrowser?.connected) {
+    return Promise.reject();
+  }
+  const pages = await tBrowser.pages();
+  const twitterPage = await tBrowser.newPage();
+  pages.forEach(p => p.close());
+
+  console.log('Gathering total follower count estimate...');
+  await twitterPage.goto(profileURL, { ...loadOpts, signal }).catch(console.error);
+  if ((!isRunning && !isAccountAction) || !tBrowser?.connection) return Promise.reject();
+  const tooltipSel = 'div[role="tooltip"]';
+  const hoverSel = 'a[href$="verified_followers"]';
+  await twitterPage.locator(hoverSel).wait();
+  await sleep(1000);
+  await twitterPage.locator(hoverSel).hover();
+  const count = await twitterPage.locator(tooltipSel).map(el => el.textContent).wait();
+  totalFollowerCount = Number(count.replace(',', '')) || 0;
+  await resetSettingsPage();
+  return { signal };
+}
+
 async function gatherFollowers() {
   if (isRunning) return false;
   if (!profileURL) return console.log('Please login first!');
-  await queryTwitter()
+  isRunning = true;
+  await scrapeFollowerCount()
+    .then(queryTwitter)
     .then(() => console.log('Follower collection complete!'))
     .catch(e => {
       if (e) console.log(e);
+    }).finally(() => {
+      isRunning = false;
+      return resetSettingsPage();
     });
   await tBrowser?.close();
-  isRunning = false;
 }
 
 async function loadFollowers() {
@@ -428,7 +472,7 @@ async function loadFollowers() {
 }
 
 async function userLogin() {
-  if (isAccountAction) return;
+  if (isAccountAction) return console.log('Account action already running!');
   isAccountAction = true;
   await checkLogin();
   isAccountAction = false;
@@ -436,7 +480,7 @@ async function userLogin() {
 }
 
 async function userLogout() {
-  if (isAccountAction) return;
+  if (isAccountAction) return console.log('Account action already running!');
   isAccountAction = true;
   console.log(`Logging out user: ${userAccount}`);
   const signal = await setupTwitterBrowser();
@@ -460,7 +504,10 @@ async function userLogout() {
   await btn.dispose();
   await redirect.catch(console.error);
   await tBrowser?.close();
+  // Reset values
   userAccount = '';
+  profileURL = ''
+  totalFollowerCount = 0;
   resetSettingsPage();
   isAccountAction = false;
   console.log(`User logged out!`);
@@ -478,9 +525,12 @@ async function init() {
   await db.openDB();
   await setupBrowser();
   await openSettings();
+  isRunning = true;
   checkLogin(true).then((e) => {
     if (!e) return;
-    resetSettingsPage();
+  }).finally(() => {
+    isRunning = false;
+    return resetSettingsPage();
   });
 }
 
