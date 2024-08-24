@@ -84,7 +84,7 @@ export async function getEntriesCount() {
  * @returns {Promise<void>}
  */
 export async function deleteEntry(url) {
-  return db.run(`
+  return db.exec(`
     DELETE FROM followerdata
     WHERE userAccount = '${userAccount}'
       AND url = '${url}'
@@ -96,7 +96,8 @@ export async function deleteEntry(url) {
  * @returns {Promise}
  */
 export async function clearEntries() {
-  return db.run(`
+  if (!userAccount) return;
+  return db.exec(`
     DELETE FROM followerdata
     WHERE userAccount = '${userAccount}'
   `).catch(dbError);

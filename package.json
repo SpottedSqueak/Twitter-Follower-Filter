@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node ./build/index.mjs",
     "lint": "eslint *.js",
-    "lint:fix": "eslint js --fix",
+    "lint:fix": "eslint *.js --fix",
     "lint:init": "eslint --init",
     "build": "npm ci & npx package",
     "build:test": "node test-build.js && cd ./test && npm ci && npx package"

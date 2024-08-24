@@ -30,6 +30,7 @@ let isRunning = false;
 let isAccountAction = false;
 // Values provided by login
 let profileURL = '';
+// let currentFollowerCount = 0;
 let totalFollowerCount = 0;
 
 /**@type Browser */
@@ -141,7 +142,7 @@ async function openSettings() {
   page.exposeFunction('save-settings', saveSettings);
   page.exposeFunction('load-settings', loadSettings);
   page.exposeFunction('load-followers', loadFollowers);
-  page.exposeFunction('get-follower-count', () => db.getEntriesCount());
+  page.exposeFunction('get-follower-count', db.getEntriesCount);
   page.exposeFunction('stop-query', stopQuery);
   page.exposeFunction('open-url', (url) => open(url));
   page.exposeFunction('export-to-csv', writeFollowersToCSV);
@@ -149,6 +150,7 @@ async function openSettings() {
   page.exposeFunction('user-logout', userLogout);
   page.exposeFunction('remove-follower', removeFollower);
   page.exposeFunction('get-version', getVersion);
+  page.exposeFunction('clear-db', db.clearEntries);
 
   // Load settings page
   const url = path.join('file://', path.resolve(__dirname, 'content/html/settings.html'));
@@ -399,12 +401,8 @@ async function stopQuery() {
 }
 
 async function scrapeFollowerCount({ signal } = {}) {
-  if (!signal || !tBrowser?.connected) {
-    signal = await setupTwitterBrowser();
-  }
-  if(!tBrowser?.connected) {
-    return Promise.reject();
-  }
+  if (!signal || !tBrowser?.connected) signal = await setupTwitterBrowser();
+  if(!tBrowser?.connected) return Promise.reject();
   const pages = await tBrowser.pages();
   const twitterPage = await tBrowser.newPage();
   pages.forEach(p => p.close());
@@ -412,20 +410,18 @@ async function scrapeFollowerCount({ signal } = {}) {
   console.log('Gathering total follower count estimate...');
   await twitterPage.goto(profileURL, { ...loadOpts, signal }).catch(console.error);
   if ((!isRunning && !isAccountAction) || !tBrowser?.connection) return Promise.reject();
-  const tooltipSel = 'div[role="tooltip"]';
-  const hoverSel = 'a[href$="verified_followers"]';
-  await twitterPage.locator(hoverSel).wait();
-  await sleep(500);
-  await twitterPage.locator(hoverSel).hover();
-  const count = await twitterPage.locator(tooltipSel).map(el => el.textContent).wait();
-  totalFollowerCount = Number(count.replace(',', '')) || 0;
+  const json = await twitterPage.locator('script[data-testid="UserProfileSchema-test"]')
+    .map(el => JSON.parse(el.innerHTML)).wait();
+  totalFollowerCount = json.author?.interactionStatistic[0]?.userInteractionCount || 0;
   await resetSettingsPage();
+  console.log(`Total followers: ${totalFollowerCount.toLocaleString()}`);
   return { signal };
 }
 
 async function gatherFollowers() {
   if (isRunning) return false;
   if (!profileURL) return console.log('Please login first!');
+  // currentFollowerCount = await db.getEntriesCount();
   isRunning = true;
   await scrapeFollowerCount()
     .then(queryTwitter)

@@ -43,7 +43,7 @@ async function init() {
     const queryBtn = e.target.closest('#query');
     queryBtn.disabled = true;
     const countTimer = setInterval(() => {
-      setFollowerCount();
+      loadSettings().then(reset);
     }, 10000);
     document.querySelector('#stop-query').disabled = false;
     // Gather followers
@@ -95,16 +95,16 @@ async function init() {
   document.querySelector('.user-logout').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window['user-logout']().finally(() => {
-      loadSettings();
+    window['user-logout']().finally(async () => {
+      await loadSettings();
       reset();
     });
   });
   document.querySelector('.user-login').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window['user-login']().finally(() => {
-      loadSettings();
+    window['user-login']().finally(async () => {
+      await loadSettings();
       reset();
     });
   });
@@ -112,6 +112,14 @@ async function init() {
     e.preventDefault();
     e.stopPropagation();
     window['open-url'](e.target.href);
+  });
+  document.querySelector('#clear-db').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const msg = `This action will delete all followers from the database! Are you sure?`;
+    if (confirm(msg)) {
+      window['clear-db']().then(() => alert('what')).finally(reset);
+    }
   });
   reset();
 }
@@ -123,6 +131,10 @@ async function setFollowerCount() {
   document.querySelector('#follower-count').innerHTML = fCount;
   document.querySelector('#total-follower-count').innerHTML = tCount;
   document.querySelector('#filter').disabled = followerCount < 1;
+  const progress = document.querySelector('#db-progress');
+  progress.value = followerCount;
+  progress.max = filters.totalFollowerCount;
+  progress.nextElementSibling.innerHTML = Math.floor((followerCount/filters.totalFollowerCount) * 100) || 0;
 }
 
 async function saveFilters(e) {

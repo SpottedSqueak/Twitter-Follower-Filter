@@ -26,6 +26,10 @@ a:hover {
   text-decoration: none;
 }
 
+h3 {
+  position: relative;
+}
+
 input, label, button {
   cursor: pointer;
 }
@@ -206,6 +210,25 @@ h1 > span {
 
 .console p:nth-child(odd) {
   background-color: var(--bg-color-odd);
+}
+
+#db-progress-container {
+  display: flex;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+#db-progress-container span {
+  width: 50px;
+  text-align: end;
+}
+
+#db-progress-container span::after {
+  content: "%";
 }
 
 /** Animations */

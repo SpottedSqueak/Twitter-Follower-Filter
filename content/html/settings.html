@@ -48,12 +48,19 @@
           <button id="filter">Filter Followers</button>
         </p>
       </form>
-      <h3>Database contains: <span id="follower-count">0</span> of a possible <span id="total-follower-count">???</span> followers</h3>
+      <h3>Database contains: <span id="follower-count">0</span> of a possible <span id="total-follower-count">???</span> followers
+        <div id="db-progress-container">
+          <progress id="db-progress" max="1" value="0"></progress>
+          <span>0</span>
+        </div>
+      </h3>
+
       <p class="container">
         <button id="query"><img class="loading-icon" src="./resources/loading-svgrepo-com.svg" />Gather Followers <small>(Time intensive process!)</small></button>
         <button id="stop-query" disabled>Stop Query</button>
         <span class="hidden"><input id="new-query" type="checkbox" checked><label for="new-query">New followers only</label></span>
         <button id="export">Export to CSV</button>
+        <button id="clear-db">Clear Database</button>
       </p>
       <div class="console"></div>
     </section>
