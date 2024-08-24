@@ -78,9 +78,12 @@ async function init() {
       e.stopPropagation();
     }
     if (btn) {
-      await window['remove-follower'](btn.dataset.href, btn.classList.contains('block'));
-      followers = followers.filter(d => d.url !== url);
-      displayFollowers();
+      const url = btn.dataset.href;
+      await window['remove-follower'](url, btn.classList.contains('block'))
+      .then(() => {
+        followers = followers.filter(d => d.url !== url);
+        displayFollowers();
+      }).catch(console.error);
     } else if (container) {
       await window['open-url'](container.href);
     }
@@ -234,7 +237,7 @@ function setQueryButtons() {
   document.querySelector('#query').disabled = filters.isRunning === true;
 }
 
-function addToConsole(text) {
+window.addToConsole = function addToConsole(text) {
   if (!consoleDiv) return;
   const str = `<p>${text}</p>`;
   consoleDiv.innerHTML += str;
