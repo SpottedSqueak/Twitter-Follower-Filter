@@ -166,5 +166,5 @@ export async function openDB() {
  * @returns {Promise}
  */
 export async function close() {
-  return db?.close();
+  return db?.close().catch(() => {});
 }

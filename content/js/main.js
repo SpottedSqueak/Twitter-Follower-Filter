@@ -98,18 +98,16 @@ async function init() {
   document.querySelector('.user-logout').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window['user-logout']().finally(async () => {
-      await loadSettings();
-      reset();
-    });
+    window['user-logout']()
+      .finally(loadSettings)
+      .finally(reset);
   });
   document.querySelector('.user-login').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window['user-login']().finally(async () => {
-      await loadSettings();
-      reset();
-    });
+    window['user-login']()
+      .finally(loadSettings)
+      .finally(reset);
   });
   document.querySelector('#releases-link').addEventListener('click', (e) => {
     e.preventDefault();
@@ -121,7 +119,7 @@ async function init() {
     e.stopPropagation();
     const msg = `This action will delete all followers from the database! Are you sure?`;
     if (confirm(msg)) {
-      window['clear-db']().then(() => alert('what')).finally(reset);
+      window['clear-db']().finally(reset);
     }
   });
   reset();

@@ -261,7 +261,35 @@ async function loopRetryLogic(retryCount, twitterPage) {
   } else return false;
 }
 
-async function queryTwitter({ path = 'followers', signal }) {
+/**
+ * 
+ * @param {ElementHandle} followerContainer 
+ */
+async function rateLimitedCheck(followerContainer) {
+  let limited = null;
+  let count = 0;
+  do {
+    if (!tBrowser?.connected || !isRunning || count > 9) break;
+    limited = await followerContainer.$('button ::-p-text(Retry)').catch((e) => console.error(e));
+    count++;
+    // If retry button, wait before clicking
+    if (limited) {
+      console.log(`Rate limited! Waiting ${count} minutes before continuing...`);
+      // Doubles each attempt
+      await sleep(count * 60 * 1000);
+      limited.click();
+      await sleep(10 * 1000);
+    }
+    if (!isRunning) break;
+  } while (limited);
+}
+/**
+ * 
+ * @param {String} path 
+ * @param {AbortSignal} signal 
+ * @returns 
+ */
+async function setupforTwitterQuery(path, signal) {
   // Open headless browser to scrape followers
   if (!signal || !tBrowser?.connected) {
     signal = await setupTwitterBrowser();
@@ -286,9 +314,15 @@ async function queryTwitter({ path = 'followers', signal }) {
     return Promise.reject('Couldn\'t load page');
   }
   const heightDiv = await followerContainer.$('div');
+  tBrowser.once('disconnected', () => isRunning = false);
+  
+  return ({ twitterPage, followerContainer, heightDiv });
+}
+
+async function queryTwitter({ path = 'followers', signal }) {
+  let { twitterPage, followerContainer, heightDiv } = await setupforTwitterQuery(path, signal);
   // Loop through list on page and scroll down when complete
   console.log('Beginning follower scraping...');
-  tBrowser.once('disconnected', () => isRunning = false);
   // Wait for results to load...
   let currFollowers = null;
   let newData = null;
@@ -348,29 +382,6 @@ async function queryTwitter({ path = 'followers', signal }) {
   if (!isRunning) return Promise.reject('User exited');
   else tBrowser.off('disconnected');
   return Promise.resolve();
-}
-
-/**
- * 
- * @param {ElementHandle} followerContainer 
- */
-async function rateLimitedCheck(followerContainer) {
-  let limited = null;
-  let count = 0;
-  do {
-    if (!tBrowser?.connected || !isRunning || count > 9) break;
-    limited = await followerContainer.$('button ::-p-text(Retry)').catch((e) => console.error(e));
-    count++;
-    // If retry button, wait before clicking
-    if (limited) {
-      console.log(`Rate limited! Waiting ${count} minutes before continuing...`);
-      // Doubles each attempt
-      await sleep(count * 60 * 1000);
-      limited.click();
-      await sleep(10 * 1000);
-    }
-    if (!isRunning) break;
-  } while (limited);
 }
 
 async function removeFollower(url, isBlock = false) {
