@@ -42,14 +42,10 @@ async function init() {
     e.stopPropagation();
     const queryBtn = e.target.closest('#query');
     queryBtn.disabled = true;
-    const countTimer = setInterval(() => {
-      loadSettings().then(reset);
-    }, 10000);
     document.querySelector('#stop-query').disabled = false;
     // Gather followers
     window['gather-followers']()
     .finally(() => {
-      clearInterval(countTimer);
       queryBtn.disabled = false;
       setFollowerCount();
       document.querySelector('#stop-query').disabled = true;
@@ -99,15 +95,13 @@ async function init() {
     e.preventDefault();
     e.stopPropagation();
     window['user-logout']()
-      .finally(loadSettings)
-      .finally(reset);
+      .finally(loadSettings);
   });
   document.querySelector('.user-login').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     window['user-login']()
-      .finally(loadSettings)
-      .finally(reset);
+      .finally(loadSettings);
   });
   document.querySelector('#releases-link').addEventListener('click', (e) => {
     e.preventDefault();

@@ -178,6 +178,7 @@ async function getDataFromElement(handle) {
       allText: [eData.username, eData.account, eData.bio].join(' '),
       userAccount,
     };
+    if (!eData.url) return Promise.reject(`Error: ${eData}`);
     return eData;
   }, userAccount);
   return data;
@@ -329,6 +330,7 @@ async function queryTwitter({ path = 'followers', signal }) {
   let newMinHeight = null;
   let minHeight = null;
   let retryCount = 0;
+  let prevfollowers = new Set();
   // let prevFollowers = [];
   followerLoop: do {
     if (!isRunning || !tBrowser?.connected) break followerLoop;
@@ -347,7 +349,6 @@ async function queryTwitter({ path = 'followers', signal }) {
     await sleep(500);
     let followersToAdd = [];
     currFollowers = await followerContainer.$$(fSelector);
-    console.log(`Found ${currFollowers.length} followers!`);
     for (const el of currFollowers) {
       newData = await getDataFromElement(el);
       if (newData) {
@@ -355,10 +356,15 @@ async function queryTwitter({ path = 'followers', signal }) {
       }
     }
     // Check for repeat entries, exit if set to only update
-    db.addEntries(followersToAdd);
+    const testUrl = followersToAdd[0].url;
+    followersToAdd = followersToAdd.filter(d => !prevfollowers.has(d.url));
+    db.addEntries(followersToAdd).then(resetSettingsPage);
+    console.log(`Found ${followersToAdd.length} followers!`);
+    followersToAdd.forEach(d => prevfollowers.add(d.url));
     // Scroll down past last element
     if (!isRunning) break followerLoop;
-    const scrollWait = twitterPage.locator(`a[href$="${followersToAdd[0].url.split('/').pop()}"]`).setVisibility('hidden').wait()
+    const scrollWait = twitterPage.locator(`a[href$="${testUrl.split('/').pop()}"]`)
+      .setVisibility('hidden').wait()
       .catch(() => {
         console.log('Scroll timed out? Either reaching end, network hiccup, or rate limited.');
       });
@@ -366,7 +372,7 @@ async function queryTwitter({ path = 'followers', signal }) {
     currFollowers.forEach(el => el.dispose());
     await twitterPage.locator(followerContainerSel).setWaitForStableBoundingBox().wait();
     // Wait for page to refresh by checking that first div is gone
-    // console.log(`Looking for: a[href$="${followersToAdd[0].url.split('/').pop()}"]`);
+    // console.log(`Looking for: a[href$="${testUrl.split('/').pop()}"]`);
     await scrollWait;
     if (!isRunning) break followerLoop;
     // Check if rate limited
